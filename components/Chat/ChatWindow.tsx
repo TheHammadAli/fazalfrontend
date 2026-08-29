@@ -7,6 +7,8 @@ import { useDictionary } from "@/dictionaries/DictionaryProvider";
 import camIcon from "@/assets/icons/cam-icon.svg";
 import whiteArrowIcon from "@/assets/icons/white-arrow.svg";
 import { getUserId } from "@/utils/getUserId";
+import { usePresence } from "@/custom-hooks/usePresence";
+import formatLastSeen from "@/utils/formatLastSeen";
 import { useGetBroadcastThreadMessagesQuery, useGetConversationMessagesQuery, useMarkBroadcastMessagesAsReadMutation, useMarkMessagesAsReadMutation, useSendBroadcastMessageMutation, useSendMessageMutation } from "@/store/services/chatService";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -47,7 +49,7 @@ function getMessageImageUrls(message: {
 }
 
 export default function ChatWindow({ thread, onBack, threadType, draftMessage = "" }: ChatWindowProps) {
-  const { placeholders } = useDictionary();
+  const { placeholders, currentLanguage } = useDictionary();
   type PlaceholderKey = keyof typeof placeholders;
   const ph = (key: PlaceholderKey) => placeholders[key];
   const PAGE_LIMIT = 15;
@@ -83,8 +85,11 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
     isBroadcastReceived,
     broadcastRequestId,
     broadcastThreadId,
+    headerUserId,
     headerName,
     headerEmail,
+    headerLastSeenAt,
+    headerIsOnline,
     headerAvatar,
   } = useMemo(() => {
     const convId = thread?._id ?? thread?.id ?? "";
@@ -93,20 +98,48 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
       ? thread?.buyer
       : thread?.seller?.id || thread?.seller?._id;
     const bThreadId = broadcastReceived ? (thread?.threadId ?? "") : convId;
-    const hUser =
-      thread?.buyer?.id || thread?.buyer?._id !== userId
-        ? thread?.buyer
-        : thread?.seller;
+    // `??` before the comparison, and the comparison before the ternary: written
+    // as `buyer?.id || buyer?._id !== userId` this parsed as
+    // `(buyer.id) || (buyer._id !== userId)`, which is truthy whenever the buyer
+    // has an id — so a seller viewing their own thread was shown as the other
+    // party, and would have been given their own presence in the header.
+    const buyerId = thread?.buyer?.id ?? thread?.buyer?._id;
+    const hUser = String(buyerId ?? "") !== userId ? thread?.buyer : thread?.seller;
     return {
       conversationId: convId,
       isBroadcastReceived: broadcastReceived,
       broadcastRequestId: bRequestId,
       broadcastThreadId: bThreadId,
+      headerUserId: String(hUser?.id ?? hUser?._id ?? ""),
       headerName: hUser?.name ?? thread?.name ?? "",
       headerEmail: hUser?.email ?? thread?.email ?? "",
+      headerLastSeenAt: hUser?.lastSeenAt ?? null,
+      headerIsOnline: Boolean(hUser?.isOnline),
       headerAvatar: hUser?.image ?? thread?.avatar ?? "https://i.pravatar.cc/80?img=11",
     };
   }, [thread, userId]);
+
+  // Live presence for the person on the other end of this conversation, seeded
+  // with whatever the conversation list already told us.
+  const presenceSeed = useMemo(
+    () =>
+      headerUserId
+        ? { [headerUserId]: { isOnline: headerIsOnline, lastSeenAt: headerLastSeenAt } }
+        : {},
+    [headerUserId, headerIsOnline, headerLastSeenAt],
+  );
+  const presenceIds = useMemo(
+    () => (headerUserId ? [headerUserId] : []),
+    [headerUserId],
+  );
+  const presence = usePresence(presenceIds, presenceSeed);
+  const headerPresence = headerUserId ? presence[headerUserId] : undefined;
+
+  const headerStatus = headerPresence?.isOnline
+    ? String(placeholders.online ?? "Online")
+    : headerPresence?.lastSeenAt
+      ? `${placeholders.last_seen ?? "last seen"} ${formatLastSeen(headerPresence.lastSeenAt, currentLanguage)}`
+      : headerEmail;
   const [messageText, setMessageText] = useState("");
   const [filteredMessages, setFilteredMessages] = useState<ChatMessage[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -498,7 +531,11 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
             />
             <div className="min-w-0">
               <p className="truncate text-[15px] font-semibold text-gray-900 first-letter:uppercase">{headerName}</p>
-              <p className="truncate text-xs text-gray-500">{headerEmail}</p>
+              <p
+                className={`truncate text-xs ${headerPresence?.isOnline ? "text-green-1" : "text-gray-500"}`}
+              >
+                {headerStatus}
+              </p>
             </div>
           </>
         ) : (
@@ -566,7 +603,7 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
                     ) : null}
                     {(hasImages || showText) ? (
                       <div
-                        className={`w-fit max-w-[85%] overflow-hidden rounded-xl lg:max-w-[60%] ${mine ? "bg-[#EEF2F3]" : "bg-[#F6F6F6]"}`}
+                        className={`w-fit max-w-[85%] overflow-hidden rounded-xl lg:max-w-[60%] ${mine ? "bg-[#EAF1FB]" : "bg-[#DFF4F4]"}`}
                       >
                         {hasImages ? (
                           <div

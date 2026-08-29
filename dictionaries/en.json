@@ -279,6 +279,8 @@
         "service_history_desc": "Completed orders and history will appear here",
         "services_listing": "Services listing",
         "create_and_manage_services": "Create and manage your services easily.",
+        "online": "Online",
+        "last_seen": "last seen",
         "chat_title": "Chat",
         "back": "Back",
         "start_conversation": "Start conversation",

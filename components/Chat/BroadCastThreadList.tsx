@@ -128,7 +128,9 @@ function BroadCastThreadList({
                     </li>
                 ) : conversations?.data?.map((thread: any, index: number) => {
                     const isActive = (thread?._id ?? thread?.id) === chatId;
-                    const thread_user = thread?.buyer?.id || thread?.buyer?._id !== userId ? thread?.buyer : thread?.seller;
+                    // Same parsing fix as DirectMessages — see the comment there.
+        const buyerId = thread?.buyer?.id ?? thread?.buyer?._id;
+        const thread_user = String(buyerId ?? "") !== userId ? thread?.buyer : thread?.seller;
                     const unreadCount =
                         typeof thread.unreadCount === "number"
                             ? thread.unreadCount

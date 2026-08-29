@@ -14,6 +14,8 @@ import moment from 'moment';
 import noMessagesIcon from "@/assets/icons/no-message.svg";
 import noImageAvtar from "@/assets/images/default-profile-avatar.svg";
 import AvatarUi from '../Ui/AvatarUi';
+import { useMemo } from 'react';
+import { usePresence, type PresenceMap } from '@/custom-hooks/usePresence';
 function DirectMessages({
     threadType,
     setThreadType,
@@ -42,6 +44,27 @@ function DirectMessages({
             skip: !userId,
         },
     );
+
+    // Presence for everyone in the list: seeded from what the conversations API
+    // already returned so the dots are right on first paint, then kept live by
+    // the socket.
+    const { presenceIds, presenceSeed } = useMemo(() => {
+        const ids: string[] = [];
+        const seed: PresenceMap = {};
+        for (const thread of filteredThreads as any[]) {
+            const buyerId = thread?.buyer?.id ?? thread?.buyer?._id;
+            const other = String(buyerId ?? "") !== userId ? thread?.buyer : thread?.seller;
+            const otherId = String(other?.id ?? other?._id ?? "");
+            if (!otherId) continue;
+            ids.push(otherId);
+            seed[otherId] = {
+                isOnline: Boolean(other?.isOnline),
+                lastSeenAt: other?.lastSeenAt ?? null,
+            };
+        }
+        return { presenceIds: ids, presenceSeed: seed };
+    }, [filteredThreads, userId]);
+    const presence = usePresence(presenceIds, presenceSeed);
 
     const totalPages = parsePositiveInt(conversations?.data?.totalPages);
     const lastBatch =
@@ -119,7 +142,14 @@ function DirectMessages({
                     </li>
                 ) : filteredThreads?.map((thread: any, index) => {
                     const isActive = thread?._id === chatId;
-                    const thread_user = thread?.buyer?.id || thread?.buyer?._id !== userId ? thread?.buyer : thread?.seller;
+                    // `??` before the comparison: written as
+                    // `buyer?.id || buyer?._id !== userId` this parsed as
+                    // `(buyer.id) || (buyer._id !== userId)`, truthy whenever the
+                    // buyer has an id, so a seller saw themselves as the other party.
+                    const buyerId = thread?.buyer?.id ?? thread?.buyer?._id;
+                    const thread_user = String(buyerId ?? "") !== userId ? thread?.buyer : thread?.seller;
+                    const otherUserId = String(thread_user?.id ?? thread_user?._id ?? "");
+                    const isOnline = Boolean(presence[otherUserId]?.isOnline);
                     const unreadCount =
                         typeof thread.unreadCount === "number"
                             ? thread.unreadCount
@@ -137,11 +167,19 @@ function DirectMessages({
                                 }}
                                 className={`flex w-full cursor-pointer items-start gap-3 px-4 py-4 text-left ${isActive ? "bg-[#E7F4F5]" : "hover:bg-gray-50"}`}
                             >
-                                <AvatarUi
-                                    image={thread_user?.image ?? noImageAvtar.src}
-                                    name={thread_user?.name ?? ""}
-                                    className={`h-11 w-11 rounded-full bg-[#e7f4f5] !text-green-1 ${isActive ? "border-[1px] border-green-1" : ""}`}
-                                />
+                                <span className="relative shrink-0">
+                                    <AvatarUi
+                                        image={thread_user?.image ?? noImageAvtar.src}
+                                        name={thread_user?.name ?? ""}
+                                        className={`h-11 w-11 rounded-full bg-[#e7f4f5] !text-green-1 ${isActive ? "border-[1px] border-green-1" : ""}`}
+                                    />
+                                    {isOnline ? (
+                                        <span
+                                            aria-label={ph("online")}
+                                            className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-[#22C55E]"
+                                        />
+                                    ) : null}
+                                </span>
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-center justify-between gap-2">
                                         <p className="truncate text-[15px] font-medium text-[#030303] first-letter:capitalize">{thread_user?.name ?? ""}</p>
