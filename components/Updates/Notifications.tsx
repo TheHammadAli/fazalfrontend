@@ -169,6 +169,19 @@ function Notifications({ setOpenSidebar, unreadCount = 0, setReadCount }: Notifi
             router.push(`/chat?tab=broadcast_messages&type=${subTab}&chatId=${item.payload?.thread?.id}`);
             return;
         }
+        // Someone liked this user's listing or service — open the item itself.
+        // Handled before the targetId lookup below, which expects an order or
+        // request shape this payload doesn't have.
+        if (item.type === "LIKE") {
+            const likedId = item.payload?.itemId;
+            if (!likedId) return;
+            router.push(
+                item.payload?.itemType === "product"
+                    ? `/buy-product?id=${likedId}`
+                    : `/book-service?id=${likedId}`,
+            );
+            return;
+        }
         const targetId = getPayloadTargetId(getNotificationPayload(item));
         if (!targetId) return;
         switch (item.type) {
