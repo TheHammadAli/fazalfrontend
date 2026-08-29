@@ -1,0 +1,61 @@
+name: Deploy Fazl Staging Frontend
+
+on:
+  push:
+    branches:
+      - hammad
+
+jobs:
+  deploy:
+    name: Staging Frontend Deployment
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+
+          script: |
+            set -e
+
+            APP_DIR="/var/www/buy-sell/staging/frontend"
+
+            echo "======================================"
+            echo "FAZL STAGING FRONTEND DEPLOYMENT"
+            echo "======================================"
+
+            cd "$APP_DIR"
+
+            echo "Fetching hammad branch..."
+            git fetch origin hammad
+
+            echo "Updating staging code..."
+            git reset --hard origin/hammad
+
+            echo "Installing dependencies..."
+            npm ci
+
+            echo "Creating staging build..."
+            npm run build
+
+            echo "Staging build successful."
+
+            echo "Restarting staging frontend..."
+            pm2 restart staging-web-buy-sell --update-env
+
+            echo "Saving PM2 configuration..."
+            pm2 save
+
+            echo "Waiting for application..."
+            sleep 5
+
+            echo "Running health check..."
+            curl -f http://127.0.0.1:3004/ > /dev/null
+
+            echo "======================================"
+            echo "STAGING FRONTEND DEPLOYMENT SUCCESSFUL"
+            echo "URL: https://staging.fazlapp.com"
+            echo "======================================"
