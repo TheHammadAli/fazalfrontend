@@ -19,8 +19,7 @@ import BroadCastModal from "../Ui/BroadCastModal";
 import Modal from "../Ui/Modals/Modal";
 import AllProductsAndServices from "./AllProductsAndServices";
 import { useCanInteractAsUser, useIsGuest } from "@/custom-hooks/useIsGuest";
-import { useAppDispatch } from "@/store/store";
-import { logout } from "@/store/reducers/authReducer";
+import { useLogout } from "@/custom-hooks/useLogout";
 import { getCatalogItemsFromSearchResponse } from "@/utils/catalogSearch";
 import type { StaticImageData } from "next/image";
 import FindProdBanner from "./FindProdBanner";
@@ -180,7 +179,7 @@ function UserLocationBadge({ locationName }: { locationName: string }) {
 function HomeSection() {
   const isGuest = useIsGuest();
   const isLoggedIn = useCanInteractAsUser();
-  const dispatch = useAppDispatch();
+  const signOut = useLogout();
   const { userId } = useAppSelector((state) => state.authReducer);
   const { data: profileData } = useGetUserDetailQuery(userId, {
     skip: !userId || isGuest,
@@ -296,8 +295,7 @@ function HomeSection() {
             <button
               type="button"
               onClick={() => {
-                dispatch(logout());
-                router.push("/signin");
+                void signOut().then(() => router.push("/signin"));
               }}
               className="shrink-0 cursor-pointer text-[14px] font-semibold text-[#001907] underline sm:text-[15px]"
             >

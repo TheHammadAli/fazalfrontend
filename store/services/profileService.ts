@@ -20,6 +20,14 @@ export const profileService = baseApi.injectEndpoints({
       }),
     }),
 
+    unregisterFcmToken: build.mutation({
+      query: (token: string) => ({
+        url: "/users/unregister-fcm-token",
+        method: "POST",
+        body: { token },
+      }),
+    }),
+
     updateProfile: build.mutation({
       query: ({ formData, id }) => ({
         url: "/users/" + id,
@@ -134,4 +142,5 @@ export const {
   useUpdateProfileMutation,
   useLazyGetUserDetailQuery,
   useRegisterFcmTokenMutation,
+  useUnregisterFcmTokenMutation,
 } = profileService;

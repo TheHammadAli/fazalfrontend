@@ -15,8 +15,8 @@ import {
   getSupportWhatsAppUrl,
 } from "@/assets/content/constants";
 import { useRouter } from "next/navigation";
-import { useAppDispatch, useAppSelector } from "@/store/store";
-import { logout } from "@/store/reducers/authReducer";
+import { useAppSelector } from "@/store/store";
+import { useLogout } from "@/custom-hooks/useLogout";
 import { useGetUserDetailQuery } from "@/store/services/profileService";
 import AvatarUi from "@/components/Ui/AvatarUi";
 import { withImageCacheBust } from "@/utils/withImageCacheBust";
@@ -42,7 +42,7 @@ function Navigations({
 }: NavigationsTypes) {
   const { pages, placeholders } = useDictionary();
   const router = useRouter();
-  const dispatch = useAppDispatch();
+  const signOut = useLogout();
   const { userId } = useAppSelector((state) => state.authReducer);
   const [mounted, setMounted] = useState(false);
   const {
@@ -199,8 +199,7 @@ function Navigations({
       <div
         className={`px-4 xl:px-6 py-4 flex items-center gap-2 cursor-pointer `}
         onClick={() => {
-          dispatch(logout());
-          router.push("/en/signin");
+          void signOut().then(() => router.push("/en/signin"));
         }}
       >
         <Image src={privacyIcon} alt="icon" className="" />
