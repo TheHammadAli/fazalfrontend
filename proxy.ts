@@ -58,6 +58,9 @@ export function proxy(request: NextRequest) {
     `/${locale}/contact-us`,
     `/${locale}/terms-conditions`,
     `/${locale}/privacy-policy`,
+    // Linked from the Play Store listing as the account deletion URL, so it has
+    // to open for someone who is not signed in — including a store reviewer.
+    `/${locale}/delete-account`,
   ];
 
   function checkPathStartsWith(path: string) {
