@@ -139,7 +139,7 @@ function Layout({ children }: { children: React.ReactNode }) {
     // Native Allow/Block on first click if still undecided (e.g. Google login / already signed in).
     // Not desktop-only: Android mobile browsers support the Notification API and Firebase web
     // push fine, and excluding them here was silently skipping FCM registration for anyone using
-    // Fazal from a phone browser (rather than the native app) — including for chat messages.
+    // Fazl from a phone browser (rather than the native app) — including for chat messages.
     if (!userId) return;
     if (typeof window === "undefined" || !("Notification" in window)) return;
 
