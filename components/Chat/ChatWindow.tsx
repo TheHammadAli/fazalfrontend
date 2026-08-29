@@ -87,7 +87,6 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
     broadcastThreadId,
     headerUserId,
     headerName,
-    headerEmail,
     headerLastSeenAt,
     headerIsOnline,
     headerAvatar,
@@ -112,7 +111,6 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
       broadcastThreadId: bThreadId,
       headerUserId: String(hUser?.id ?? hUser?._id ?? ""),
       headerName: hUser?.name ?? thread?.name ?? "",
-      headerEmail: hUser?.email ?? thread?.email ?? "",
       headerLastSeenAt: hUser?.lastSeenAt ?? null,
       headerIsOnline: Boolean(hUser?.isOnline),
       headerAvatar: hUser?.image ?? thread?.avatar ?? "https://i.pravatar.cc/80?img=11",
@@ -135,11 +133,15 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
   const presence = usePresence(presenceIds, presenceSeed);
   const headerPresence = headerUserId ? presence[headerUserId] : undefined;
 
+  // The line under the name is presence only. It stays empty when the peer has
+  // never been seen, rather than falling back to their email address — an email
+  // in the header is noise, and showing someone's address to the other party is
+  // not the point of this line.
   const headerStatus = headerPresence?.isOnline
     ? String(placeholders.online ?? "Online")
     : headerPresence?.lastSeenAt
       ? `${placeholders.last_seen ?? "last seen"} ${formatLastSeen(headerPresence.lastSeenAt, currentLanguage)}`
-      : headerEmail;
+      : "";
   const [messageText, setMessageText] = useState("");
   const [filteredMessages, setFilteredMessages] = useState<ChatMessage[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -531,11 +533,13 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
             />
             <div className="min-w-0">
               <p className="truncate text-[15px] font-semibold text-gray-900 first-letter:uppercase">{headerName}</p>
-              <p
-                className={`truncate text-xs ${headerPresence?.isOnline ? "text-green-1" : "text-gray-500"}`}
-              >
-                {headerStatus}
-              </p>
+              {headerStatus ? (
+                <p
+                  className={`truncate text-xs ${headerPresence?.isOnline ? "text-green-1" : "text-gray-500"}`}
+                >
+                  {headerStatus}
+                </p>
+              ) : null}
             </div>
           </>
         ) : (
