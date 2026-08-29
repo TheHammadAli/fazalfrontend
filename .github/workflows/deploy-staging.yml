@@ -1,13 +1,13 @@
-name: Deploy FazlApp Frontend
+name: Deploy Fazl Staging Frontend
 
 on:
   push:
     branches:
-      - develop
+      - hammad
 
 jobs:
   deploy:
-    name: Production Frontend Deployment
+    name: Staging Frontend Deployment
     runs-on: ubuntu-latest
 
     steps:
@@ -21,30 +21,30 @@ jobs:
           script: |
             set -e
 
-            APP_DIR="/var/www/buy-sell/production/frontend"
+            APP_DIR="/var/www/buy-sell/staging/frontend"
 
             echo "======================================"
-            echo "FAZLAPP FRONTEND DEPLOYMENT"
+            echo "FAZL STAGING FRONTEND DEPLOYMENT"
             echo "======================================"
 
             cd "$APP_DIR"
 
-            echo "Fetching develop branch..."
-            git fetch origin develop
+            echo "Fetching hammad branch..."
+            git fetch origin hammad
 
-            echo "Updating production code..."
-            git reset --hard origin/develop
+            echo "Updating staging code..."
+            git reset --hard origin/hammad
 
             echo "Installing dependencies..."
             npm ci
 
-            echo "Creating production build..."
+            echo "Creating staging build..."
             npm run build
 
-            echo "Production build successful."
+            echo "Staging build successful."
 
-            echo "Restarting frontend..."
-            pm2 restart buy-sell-production-frontend --update-env
+            echo "Restarting staging frontend..."
+            pm2 restart staging-web-buy-sell --update-env
 
             echo "Saving PM2 configuration..."
             pm2 save
@@ -53,9 +53,9 @@ jobs:
             sleep 5
 
             echo "Running health check..."
-            curl -f http://127.0.0.1:3001/ > /dev/null
+            curl -f http://127.0.0.1:3004/ > /dev/null
 
             echo "======================================"
-            echo "DEPLOYMENT SUCCESSFUL"
-            echo "Website: https://fazlapp.com"
+            echo "STAGING FRONTEND DEPLOYMENT SUCCESSFUL"
+            echo "URL: https://staging.fazlapp.com"
             echo "======================================"
