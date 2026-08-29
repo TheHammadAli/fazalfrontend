@@ -83,7 +83,21 @@ export function usePresence(userIds: string[], seed?: PresenceMap): PresenceMap 
     };
   }, [key]);
 
-  return useMemo(() => ({ ...(seed ?? {}), ...live }), [seed, live]);
+  // Merged per field, not per user. A socket update is authoritative about
+  // `isOnline`, but it does not always carry `lastSeenAt` — the subscription
+  // snapshot never does — so replacing the whole entry wiped the timestamp the
+  // conversation list had already supplied, and "last seen ..." vanished a
+  // moment after it appeared.
+  return useMemo(() => {
+    const merged: PresenceMap = { ...(seed ?? {}) };
+    for (const [id, value] of Object.entries(live)) {
+      merged[id] = {
+        isOnline: value.isOnline,
+        lastSeenAt: value.lastSeenAt ?? merged[id]?.lastSeenAt ?? null,
+      };
+    }
+    return merged;
+  }, [seed, live]);
 }
 
 export default usePresence;
