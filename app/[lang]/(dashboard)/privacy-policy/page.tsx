@@ -1,7 +1,20 @@
-import React from "react";
+import type { Metadata } from "next";
+import { LegalDocument } from "@/components/Legal/LegalDocument";
 
-function page() {
-  return <div>privacy-policy</div>;
+export const metadata: Metadata = {
+  title: "Privacy Policy | Fazl App",
+  description:
+    "How Fazl App collects, uses, shares and retains your personal data, and how to exercise your rights over it.",
+};
+
+function PrivacyPolicyPage() {
+  return (
+    <LegalDocument
+      title="Privacy Policy"
+      src="/api/legal/privacy-policy"
+      filename="fazl-app-privacy-policy.pdf"
+    />
+  );
 }
 
-export default page;
+export default PrivacyPolicyPage;
