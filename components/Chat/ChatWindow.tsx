@@ -516,7 +516,10 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
   return (
     <section
       className="flex h-full min-h-0 flex-1 flex-col bg-repeat bg-center"
-      style={{ backgroundImage: `url(${chatDoodleBackground.src})`, backgroundSize: "280px" }}
+      style={{
+        backgroundImage: `linear-gradient(rgba(255,255,255,0.6), rgba(255,255,255,0.6)), url(${chatDoodleBackground.src})`,
+        backgroundSize: "280px",
+      }}
     >
       <header className="flex h-16 items-center gap-3 border-b border-gray-200 bg-white px-4 lg:px-8">
         {onBack ? (
