@@ -19,7 +19,7 @@ import baseApi from "@/store/baseApi";
 import { useAppDispatch } from "@/store/store";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import noImageAvtar from "@/assets/images/default-profile-avatar.svg";
-import chatDoodleBackground from "@/assets/images/new-chat-doodle.svg";
+import chatDoodleBackground from "@/assets/images/chat-doodle-bg.jpg";
 import noMessagesIcon from "@/assets/icons/no-message.svg";
 import AvatarUi from "../Ui/AvatarUi";
 import Lightbox from "yet-another-react-lightbox";
@@ -515,8 +515,8 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
   }, [dispatch]);
   return (
     <section
-      className="flex h-full min-h-0 flex-1 flex-col bg-no-repeat bg-cover md:bg-contain bg-center"
-      style={{ backgroundImage: `url(${chatDoodleBackground.src})` }}
+      className="flex h-full min-h-0 flex-1 flex-col bg-repeat bg-center"
+      style={{ backgroundImage: `url(${chatDoodleBackground.src})`, backgroundSize: "280px" }}
     >
       <header className="flex h-16 items-center gap-3 border-b border-gray-200 bg-white px-4 lg:px-8">
         {onBack ? (
