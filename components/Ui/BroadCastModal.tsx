@@ -159,6 +159,20 @@ function BroadCastModal({ setOpenBroadcast }: { setOpenBroadcast: (open: boolean
         setIsCategoryOpen(false);
     }, [selectedType]);
 
+    // Selling only makes sense for products — a service is something you
+    // perform for a buyer, not resell to one. Drop a stale "selling" pick
+    // the moment the user switches to Service.
+    const purposeOptions =
+        selectedType === "service"
+            ? PURPOSE_OPTIONS.filter((option) => option.value !== "selling")
+            : PURPOSE_OPTIONS;
+
+    useEffect(() => {
+        if (selectedType === "service" && selectedPurpose === "selling") {
+            setSelectedPurpose(null);
+        }
+    }, [selectedType, selectedPurpose]);
+
     const buildSentDescription = () => {
         const categoryName = selectedCategory?.name?.trim() || "";
         const locationName = location?.description?.trim() || "";
@@ -520,7 +534,7 @@ function BroadCastModal({ setOpenBroadcast }: { setOpenBroadcast: (open: boolean
                                 />
                                 {isPurposeOpen ? (
                                     <div className={DROPDOWN_PANEL_CLASS}>
-                                        {PURPOSE_OPTIONS.map((purpose) => (
+                                        {purposeOptions.map((purpose) => (
                                             <button
                                                 key={purpose.value}
                                                 type="button"

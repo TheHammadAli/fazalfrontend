@@ -80,8 +80,8 @@ function mergeCatalogItems(
 
 function CatalogCardSkeleton() {
     return (
-        <div className="animate-pulse rounded-2xl p-1">
-            <div className="h-[180px] w-full rounded-[16px] bg-gray-200 sm:h-[276px]" />
+        <div className="animate-pulse rounded-[16px] border border-gray-9 bg-white p-2">
+            <div className="h-[180px] w-full rounded-[12px] bg-gray-200 sm:h-[276px]" />
             <div className="mt-3 h-4 w-2/3 rounded bg-gray-200" />
             <div className="mt-3 flex items-center gap-2">
                 <div className="h-4 w-24 rounded bg-gray-200" />
@@ -112,7 +112,7 @@ function CatalogCard({
         <div
             role="button"
             tabIndex={0}
-            className="h-full w-full cursor-pointer bg-none"
+            className="group h-full w-full cursor-pointer rounded-[16px] border border-gray-9 bg-white p-2 transition-all duration-200 ease-out hover:-translate-y-1 hover:border-green-3 hover:shadow-menu focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-1"
             onClick={() => {
                 if (shouldSuppressClick() || !itemId) return;
                 onSelect(itemId);
@@ -124,19 +124,21 @@ function CatalogCard({
                 }
             }}
         >
-            <div className="h-[180px] overflow-hidden rounded-[16px] shadow-menu sm:h-[276px]">
+            <div className="h-[180px] overflow-hidden rounded-[12px] sm:h-[276px]">
                 <Image
                     src={item.images?.length > 0 ? item.images[0] : noImageAvtar}
                     alt={item.title || "catalog_item"}
                     height={100}
                     width={100}
                     draggable={false}
-                    className="pointer-events-none h-full w-full select-none bg-gray-12 object-cover"
+                    className="pointer-events-none h-full w-full select-none bg-gray-12 object-cover transition-transform duration-300 ease-out group-hover:scale-105"
                     unoptimized
                 />
             </div>
-            <h2 className="mt-3 line-clamp-1 text-[16px] font-medium text-black-1 first-letter:capitalize">
-                {item.title}
+            <h2 className="mt-3 text-[16px] font-normal text-green-1">
+                {isCallForPrice
+                    ? placeholders.call_for_price
+                    : `${currencyLabel} ${Number(item.price).toLocaleString("en-US")}`}
             </h2>
             {/* <div className="flex gap-2">
                 <AvgRatingStars
@@ -148,10 +150,8 @@ function CatalogCard({
                     ({item.reviewCount ?? 0})
                 </span>
             </div> */}
-            <h2 className="text-[16px] font-normal text-green-1">
-                {isCallForPrice
-                    ? placeholders.call_for_price
-                    : `${currencyLabel} ${Number(item.price).toLocaleString("en-US")}`}
+            <h2 className="line-clamp-1 text-[16px] font-medium text-black-1 transition-colors first-letter:capitalize group-hover:text-green-1">
+                {item.title}
             </h2>
         </div>
     );
