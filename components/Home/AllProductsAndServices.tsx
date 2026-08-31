@@ -39,21 +39,14 @@ const CATALOG_SWIPER_BREAKPOINTS = {
         spaceBetween: 8,
     },
     640: {
-        slidesPerView: 2,
+        slidesPerView: 3,
         spaceBetween: 12,
         slidesOffsetBefore: 0,
         slidesOffsetAfter: 0,
     },
-    1024: {
-        slidesPerView: 3,
-        spaceBetween: 20,
-        slidesOffsetBefore: 0,
-        slidesOffsetAfter: 0,
-        freeMode: false,
-    },
-    1280: {
+    768: {
         slidesPerView: 4,
-        spaceBetween: 20,
+        spaceBetween: 14,
         slidesOffsetBefore: 0,
         slidesOffsetAfter: 0,
         freeMode: false,
@@ -80,14 +73,12 @@ function mergeCatalogItems(
 
 function CatalogCardSkeleton() {
     return (
-        <div className="animate-pulse rounded-[16px] border border-gray-9 bg-white p-2">
-            <div className="h-[180px] w-full rounded-[12px] bg-gray-200 sm:h-[276px]" />
-            <div className="mt-3 h-4 w-2/3 rounded bg-gray-200" />
-            <div className="mt-3 flex items-center gap-2">
-                <div className="h-4 w-24 rounded bg-gray-200" />
-                <div className="h-4 w-6 rounded bg-gray-200" />
+        <div className="animate-pulse overflow-hidden rounded-[16px] border border-gray-9 bg-white">
+            <div className="h-[145px] w-full bg-gray-200 sm:h-[195px]" />
+            <div className="space-y-3 p-2">
+                <div className="h-4 w-16 rounded bg-gray-200" />
+                <div className="h-4 w-2/3 rounded bg-gray-200" />
             </div>
-            <div className="mt-3 h-4 w-16 rounded bg-gray-200" />
         </div>
     );
 }
@@ -112,7 +103,7 @@ function CatalogCard({
         <div
             role="button"
             tabIndex={0}
-            className="group h-full w-full cursor-pointer rounded-[16px] border border-gray-9 bg-white p-2 transition-all duration-200 ease-out hover:-translate-y-1 hover:border-green-3 hover:shadow-menu focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-1"
+            className="group h-full w-full cursor-pointer overflow-hidden rounded-[16px] border border-gray-9 bg-white transition-all duration-200 ease-out hover:-translate-y-1 hover:border-green-3 hover:shadow-menu focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-1"
             onClick={() => {
                 if (shouldSuppressClick() || !itemId) return;
                 onSelect(itemId);
@@ -124,7 +115,7 @@ function CatalogCard({
                 }
             }}
         >
-            <div className="h-[180px] overflow-hidden rounded-[12px] sm:h-[276px]">
+            <div className="h-[145px] overflow-hidden sm:h-[195px]">
                 <Image
                     src={item.images?.length > 0 ? item.images[0] : noImageAvtar}
                     alt={item.title || "catalog_item"}
@@ -135,24 +126,26 @@ function CatalogCard({
                     unoptimized
                 />
             </div>
-            <h2 className="mt-3 text-[16px] font-normal text-green-1">
-                {isCallForPrice
-                    ? placeholders.call_for_price
-                    : `${currencyLabel} ${Number(item.price).toLocaleString("en-US")}`}
-            </h2>
-            {/* <div className="flex gap-2">
-                <AvgRatingStars
-                    rating={item.averageRating}
-                    isLoading={false}
-                    size={22}
-                />
-                <span className="text-[14px] font-normal text-gray-8">
-                    ({item.reviewCount ?? 0})
-                </span>
-            </div> */}
-            <h2 className="line-clamp-1 text-[16px] font-medium text-black-1 transition-colors first-letter:capitalize group-hover:text-green-1">
-                {item.title}
-            </h2>
+            <div className="p-2">
+                <h2 className="text-[16px] font-normal text-green-1">
+                    {isCallForPrice
+                        ? placeholders.call_for_price
+                        : `${currencyLabel} ${Number(item.price).toLocaleString("en-US")}`}
+                </h2>
+                {/* <div className="flex gap-2">
+                    <AvgRatingStars
+                        rating={item.averageRating}
+                        isLoading={false}
+                        size={22}
+                    />
+                    <span className="text-[14px] font-normal text-gray-8">
+                        ({item.reviewCount ?? 0})
+                    </span>
+                </div> */}
+                <h2 className="line-clamp-1 text-[16px] font-medium text-black-1 transition-colors first-letter:capitalize group-hover:text-green-1">
+                    {item.title}
+                </h2>
+            </div>
         </div>
     );
 }

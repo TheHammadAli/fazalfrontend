@@ -97,8 +97,9 @@ export const baseQueryWithReauth: BaseQueryFn<
         );
         result = await rawBaseQuery(args, api, extraOptions);
       } else {
-        // api.dispatch(logout());
-        // redirectToSignIn();
+        // Refresh token itself is expired/invalid — nothing left to try.
+        api.dispatch(logout());
+        redirectToSignIn();
       }
     } finally {
       release();

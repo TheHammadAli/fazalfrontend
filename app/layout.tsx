@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./[lang]/globals.css";
-import "@fontsource-variable/ibm-plex-sans/index.css";
 import Providers from "./providers";
+import { lato } from "./fonts";
 
 const FAVICON_PNG = "/favicon.png?v=4";
 const FAVICON_ICO = "/favicon.ico?v=4";
@@ -26,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html className="font-plex" lang="en" dir="ltr" suppressHydrationWarning>
+    <html className={lato.className} lang="en" dir="ltr" suppressHydrationWarning>
       <head>
         <link rel="icon" href={FAVICON_PNG} type="image/png" />
         <link rel="shortcut icon" href={FAVICON_ICO} />
