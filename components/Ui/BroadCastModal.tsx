@@ -167,11 +167,17 @@ function BroadCastModal({ setOpenBroadcast }: { setOpenBroadcast: (open: boolean
             ? PURPOSE_OPTIONS.filter((option) => option.value !== "selling")
             : PURPOSE_OPTIONS;
 
+    // Buying is the only valid purpose for a service, so pick it automatically
+    // instead of making the user open that picker too. A product has both
+    // options, so it stays a manual choice — clear any value carried over
+    // from a previous Service selection.
     useEffect(() => {
-        if (selectedType === "service" && selectedPurpose === "selling") {
+        if (selectedType === "service") {
+            setSelectedPurpose("buying");
+        } else if (selectedType === "product") {
             setSelectedPurpose(null);
         }
-    }, [selectedType, selectedPurpose]);
+    }, [selectedType]);
 
     const buildSentDescription = () => {
         const categoryName = selectedCategory?.name?.trim() || "";
