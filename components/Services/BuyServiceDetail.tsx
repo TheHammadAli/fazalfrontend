@@ -14,6 +14,8 @@ import { hasRealProfileImage } from "@/utils/hasRealProfileImage";
 import { useRequireSignIn } from "@/custom-hooks/useRequireSignIn";
 import Modal from "../Ui/Modals/Modal";
 import SharePostModal from "../Ui/SharePostModal";
+import ReportModal, { type ReportReason } from "../Ui/ReportModal";
+import { useCreateReportMutation } from "@/store/services/reportsService";
 import detailShareIcon from "@/assets/icons/detial-share-icon.svg";
 import DoodleButton from "@/components/Ui/DoodleButton";
 import verifiedIcon from "@/assets/icons/verified.svg";
@@ -92,9 +94,12 @@ function BuyServiceDetail({
   const { pages, placeholders, currentLanguage, error_messages, info_messages } =
     useDictionary();
   const sharePostRef = useRef<HTMLDivElement>(null);
+  const reportModalRef = useRef<HTMLDivElement>(null);
   const [type, setType] = useState("image");
   const [typeIndex, setTypeIndex] = useState(0);
   const [shareModal, setShareModal] = useState(false);
+  const [reportModal, setReportModal] = useState(false);
+  const [createReport, { isLoading: isSubmittingReport }] = useCreateReportMutation();
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [imageLightboxOpen, setImageLightboxOpen] = useState(false);
@@ -218,6 +223,28 @@ function BuyServiceDetail({
     setShareModal(true);
   };
 
+  const onReportClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    requireSignIn(() => setReportModal(true));
+  };
+
+  const handleSubmitReport = async (payload: { reason: ReportReason; details: string }) => {
+    if (!serviceId) return;
+    try {
+      await createReport({
+        entityId: serviceId,
+        entityType: "service",
+        reason: payload.reason,
+        details: payload.details,
+      }).unwrap();
+      toast.success(placeholders.report_submitted_success);
+      setReportModal(false);
+    } catch (err) {
+      const errorData = err as { data?: { message?: string } };
+      toast.error(errorData?.data?.message ?? error_messages.something_went_wrong);
+    }
+  };
+
   const shareUrl =
     mounted && serviceId
       ? `${window.location.origin}/book-service?id=${serviceId}`
@@ -297,6 +324,14 @@ function BuyServiceDetail({
           shareUrl={shareUrl}
           shareService={true}
         />
+      </Modal>
+      <Modal
+        editModalRef={reportModalRef}
+        open={reportModal}
+        setOpen={setReportModal}
+        centered={true}
+      >
+        <ReportModal setOpen={setReportModal} onSubmit={handleSubmitReport} loading={isSubmittingReport} />
       </Modal>
 
       <div className="flex min-h-screen flex-col items-center">
@@ -395,6 +430,29 @@ function BuyServiceDetail({
                         alt="share-icon"
                       />
                     </button>
+                    {allowMessageAndReview && (
+                      <button
+                        type="button"
+                        onClick={onReportClick}
+                        className="flex h-[26px] w-[26px] cursor-pointer items-center justify-center rounded-full bg-white text-white shadow-menu"
+                        aria-label="Report"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="black"
+                          strokeWidth={2}
+                          className="h-4 w-4"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"
+                          />
+                        </svg>
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

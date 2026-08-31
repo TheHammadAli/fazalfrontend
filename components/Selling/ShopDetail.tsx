@@ -19,7 +19,11 @@ import noImageAvtar from "@/assets/images/no-image-av.png";
 import noImageIcon from "@/assets/images/new-no-image-placeholder.png";
 import Modal from "../Ui/Modals/Modal";
 import SharePostModal from "../Ui/SharePostModal";
+import ReportModal, { type ReportReason } from "../Ui/ReportModal";
 import { getUserId } from "@/utils/getUserId";
+import { useCreateReportMutation } from "@/store/services/reportsService";
+import { useRequireSignIn } from "@/custom-hooks/useRequireSignIn";
+import toast from "react-hot-toast";
 
 function resolveEntityId(value: unknown): string | null {
   if (!value) return null;
@@ -78,12 +82,16 @@ function DetailRow({ label, value }: { label: string; value?: string | null }) {
 
 export default function ShopDetail() {
   const router = useRouter();
-  const { pages, placeholders, info_messages } = useDictionary();
+  const { pages, placeholders, info_messages, error_messages } = useDictionary();
   const id = useSearchParams().get("id");
   const userId = getUserId() ?? "";
   const [shareModal, setShareModal] = useState(false);
+  const [reportModal, setReportModal] = useState(false);
   const [mounted, setMounted] = useState(false);
   const sharePostRef = useRef<HTMLDivElement>(null);
+  const reportModalRef = useRef<HTMLDivElement>(null);
+  const { requireSignIn } = useRequireSignIn();
+  const [createReport, { isLoading: isSubmittingReport }] = useCreateReportMutation();
   const {
     data: shop,
     isLoading: isShopLoading,
@@ -121,6 +129,23 @@ export default function ShopDetail() {
       ? `${window.location.origin}/selling/shop-detail?id=${id}`
       : "";
 
+  async function handleSubmitReport(payload: { reason: ReportReason; details: string }) {
+    if (!shopData?.id) return;
+    try {
+      await createReport({
+        entityId: shopData.id,
+        entityType: "shop",
+        reason: payload.reason,
+        details: payload.details,
+      }).unwrap();
+      toast.success(placeholders.report_submitted_success);
+      setReportModal(false);
+    } catch (err) {
+      const errorData = err as { data?: { message?: string } };
+      toast.error(errorData?.data?.message ?? error_messages.something_went_wrong);
+    }
+  }
+
   return (
     <div className="w-full ">
       <Modal
@@ -135,6 +160,14 @@ export default function ShopDetail() {
           shareUrl={shareUrl}
           shareService={true}
         />
+      </Modal>
+      <Modal
+        editModalRef={reportModalRef}
+        open={reportModal}
+        setOpen={setReportModal}
+        centered={true}
+      >
+        <ReportModal setOpen={setReportModal} onSubmit={handleSubmitReport} loading={isSubmittingReport} />
       </Modal>
       <div className=" px-5 md:px-6 h-[61px] border-b-[1px] border-gray-9 bg-[white] hide-scrollbar w-full  flex justify-center ">
         <div className="w-full min-w-max hide-scrollbar overflow-scroll flex items-center gap-[6px] font-normal text-[14px] mt-5">
@@ -215,13 +248,24 @@ export default function ShopDetail() {
                       </p>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setShareModal(true)}
-                    className="shrink-0 border border-green-1 text-green-1 bg-white rounded-xl px-6 h-[36px] text-[14px] font-medium cursor-pointer"
-                  >
-                    {placeholders.share}
-                  </button>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShareModal(true)}
+                      className="shrink-0 border border-green-1 text-green-1 bg-white rounded-xl px-6 h-[36px] text-[14px] font-medium cursor-pointer"
+                    >
+                      {placeholders.share}
+                    </button>
+                    {!isShopOwner && (
+                      <button
+                        type="button"
+                        onClick={() => requireSignIn(() => setReportModal(true))}
+                        className="shrink-0 border border-red-1 text-red-1 bg-white rounded-xl px-6 h-[36px] text-[14px] font-medium cursor-pointer"
+                      >
+                        {placeholders.report}
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="flex justify-between text-[14px] font-normal">
                   <h3 className="text-[#4B514F]">{placeholders.about_us}</h3>

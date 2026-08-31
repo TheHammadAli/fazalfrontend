@@ -18,6 +18,8 @@ import toast from "react-hot-toast";
 import { useRequireSignIn } from "@/custom-hooks/useRequireSignIn";
 import Modal from "../Ui/Modals/Modal";
 import SharePostModal from "../Ui/SharePostModal";
+import ReportModal, { type ReportReason } from "../Ui/ReportModal";
+import { useCreateReportMutation } from "@/store/services/reportsService";
 import detailShareIcon from "@/assets/icons/detial-share-icon.svg";
 import DoodleButton from "@/components/Ui/DoodleButton";
 import { useRouter } from "next/navigation";
@@ -153,9 +155,12 @@ function BuyProductDetail({
   const dispatch = useAppDispatch();
   const { pages, placeholders, currentLanguage, info_messages, error_messages } = useDictionary();
   const sharePostRef = React.useRef<HTMLDivElement>(null);
+  const reportModalRef = React.useRef<HTMLDivElement>(null);
   const [type, setType] = useState("image");
   const [typeIndex, setTypeIndex] = useState(0);
   const [shareModal, setShareModal] = useState(false);
+  const [reportModal, setReportModal] = useState(false);
+  const [createReport, { isLoading: isSubmittingReport }] = useCreateReportMutation();
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [imageLightboxOpen, setImageLightboxOpen] = useState(false);
@@ -306,6 +311,28 @@ function BuyProductDetail({
     setShareModal(true);
   };
 
+  const onReportClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    requireSignIn(() => setReportModal(true));
+  };
+
+  const handleSubmitReport = async (payload: { reason: ReportReason; details: string }) => {
+    if (!productId) return;
+    try {
+      await createReport({
+        entityId: productId,
+        entityType: "product",
+        reason: payload.reason,
+        details: payload.details,
+      }).unwrap();
+      toast.success(placeholders.report_submitted_success);
+      setReportModal(false);
+    } catch (err) {
+      const errorData = err as { data?: { message?: string } };
+      toast.error(errorData?.data?.message ?? error_messages.something_went_wrong);
+    }
+  };
+
   const shareUrl =
     mounted && productId
       ? `${window.location.origin}/buy-product?id=${productId}`
@@ -445,6 +472,14 @@ function BuyProductDetail({
           shareService={true}
         />
       </Modal>
+      <Modal
+        editModalRef={reportModalRef}
+        open={reportModal}
+        setOpen={setReportModal}
+        centered={true}
+      >
+        <ReportModal setOpen={setReportModal} onSubmit={handleSubmitReport} loading={isSubmittingReport} />
+      </Modal>
       <div className="h-full min-h-screen flex flex-col items-center">
         <div className="px-5 sm:px-10 h-[61px] border-b-[1px] border-gray-9 bg-white w-full  flex justify-center">
           <div className="w-full   flex items-center gap-[6px] font-normal text-[14px] mt-5">
@@ -542,6 +577,29 @@ function BuyProductDetail({
                           alt="share-simple-icon"
                         />
                       </button>
+                      {!isOwner && (
+                        <button
+                          type="button"
+                          onClick={onReportClick}
+                          className="flex h-[26px] w-[26px] cursor-pointer items-center shadow-menu justify-center rounded-full bg-white text-white"
+                          aria-label="Report"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="black"
+                            strokeWidth={2}
+                            className="h-4 w-4"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"
+                            />
+                          </svg>
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
