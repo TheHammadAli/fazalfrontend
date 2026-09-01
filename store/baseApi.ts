@@ -132,6 +132,7 @@ export const baseApi = createApi({
     "SETTINGS",
     "FAVOURITES",
     "REPORTS",
+    "BROADCAST_OFFER",
   ],
   endpoints: () => ({}),
 });

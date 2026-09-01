@@ -10,6 +10,7 @@ import { getUserId } from "@/utils/getUserId";
 import { usePresence } from "@/custom-hooks/usePresence";
 import formatLastSeen from "@/utils/formatLastSeen";
 import { useGetBroadcastThreadMessagesQuery, useGetConversationMessagesQuery, useMarkBroadcastMessagesAsReadMutation, useMarkMessagesAsReadMutation, useSendBroadcastMessageMutation, useSendMessageMutation } from "@/store/services/chatService";
+import { useSubmitBroadcastOfferMutation, useAcceptBroadcastOfferMutation, useDeclineBroadcastOfferMutation } from "@/store/services/broadcastOfferService";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { parsePositiveInt } from "../Updates/Notifications";
@@ -49,7 +50,7 @@ function getMessageImageUrls(message: {
 }
 
 export default function ChatWindow({ thread, onBack, threadType, draftMessage = "" }: ChatWindowProps) {
-  const { placeholders, currentLanguage } = useDictionary();
+  const { placeholders, currentLanguage, error_messages } = useDictionary();
   type PlaceholderKey = keyof typeof placeholders;
   const ph = (key: PlaceholderKey) => placeholders[key];
   const PAGE_LIMIT = 15;
@@ -153,6 +154,22 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
   const [markBroadcastMessagesAsRead] = useMarkBroadcastMessagesAsReadMutation();
   const [sendMessage, { isLoading: isSendingMessage }] = useSendMessageMutation();
   const [sendBroadcastMessage, { isLoading: isSendingBroadcastMessage }] = useSendBroadcastMessageMutation();
+
+  // Broadcast recipients must make a formal offer before real chat unlocks — see
+  // `localOffer`/`showBroadcastOverlay` below. `localOffer` is seeded from `thread.offer`
+  // (embedded server-side) and re-synced whenever the thread changes, but also updated
+  // directly from each mutation's response so the overlay reacts immediately instead of
+  // waiting on the list query to refetch and flow back down through `thread`.
+  const [localOffer, setLocalOffer] = useState<any>(thread?.offer ?? null);
+  const [showOfferForm, setShowOfferForm] = useState(false);
+  const [offerPrice, setOfferPrice] = useState("");
+  const [offerMessageText, setOfferMessageText] = useState("");
+  const [submitBroadcastOffer, { isLoading: isSubmittingOffer }] = useSubmitBroadcastOfferMutation();
+  const [acceptBroadcastOffer, { isLoading: isAcceptingOffer }] = useAcceptBroadcastOfferMutation();
+  const [declineBroadcastOffer, { isLoading: isDecliningOffer }] = useDeclineBroadcastOfferMutation();
+
+  const offerAccepted = threadType === "broadcast_messages" ? localOffer?.status === "accepted" : true;
+  const showBroadcastOverlay = threadType === "broadcast_messages" && !offerAccepted;
 
   const messagesQueryArgs = useMemo(
     () => ({
@@ -272,6 +289,7 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
     try {
 
       if (threadType === "broadcast_messages") {
+        if (!offerAccepted) return;
         const broadcastMessageId = isBroadcastReceived ? thread?._id : thread?.broadcastId;
 
         if (!broadcastMessageId || !broadcastThreadId || !broadcastRequestId) {
@@ -398,12 +416,70 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
     broadcastRequestId,
     userId,
     conversationId,
+    offerAccepted,
     sendBroadcastMessage,
     sendMessage,
     refetchBroadcastMessages,
     refetch,
     scrollToBottom,
   ]);
+
+  useEffect(() => {
+    setLocalOffer(thread?.offer ?? null);
+    setShowOfferForm(false);
+    setOfferPrice("");
+    setOfferMessageText("");
+  }, [broadcastThreadId, thread?.offer?._id, thread?.offer?.status]);
+
+  const handleSubmitOffer = useCallback(async () => {
+    const priceNum = Number(offerPrice);
+    if (!Number.isFinite(priceNum) || priceNum <= 0) {
+      toast.error(String(error_messages.price_required ?? "Price is required"));
+      return;
+    }
+    if (!offerMessageText.trim()) {
+      toast.error(String(error_messages.message_required ?? "Message is required"));
+      return;
+    }
+    const broadcastId = thread?._id ?? thread?.id;
+    if (!broadcastId) {
+      toast.error("Unable to submit offer");
+      return;
+    }
+    try {
+      const res = await submitBroadcastOffer({
+        broadcastId,
+        price: priceNum,
+        message: offerMessageText.trim(),
+      }).unwrap();
+      setLocalOffer(res?.data?.offer ?? null);
+      setShowOfferForm(false);
+    } catch (err: any) {
+      toast.error(err?.data?.message ?? "Unable to submit offer");
+    }
+  }, [offerPrice, offerMessageText, thread, submitBroadcastOffer, error_messages]);
+
+  const handleAcceptOffer = useCallback(async () => {
+    const offerId = localOffer?._id;
+    if (!offerId) return;
+    try {
+      const res = await acceptBroadcastOffer({ offerId }).unwrap();
+      setLocalOffer(res?.data?.offer ?? null);
+    } catch (err: any) {
+      toast.error(err?.data?.message ?? "Unable to accept offer");
+    }
+  }, [localOffer, acceptBroadcastOffer]);
+
+  const handleDeclineOffer = useCallback(async () => {
+    const offerId = localOffer?._id;
+    if (!offerId) return;
+    try {
+      const res = await declineBroadcastOffer({ offerId }).unwrap();
+      setLocalOffer(res?.data?.offer ?? null);
+    } catch (err: any) {
+      toast.error(err?.data?.message ?? "Unable to decline offer");
+    }
+  }, [localOffer, declineBroadcastOffer]);
 
   useEffect(() => {
     if (threadType !== "broadcast_messages" || !broadcastRequestId || !broadcastThreadId) return;
@@ -554,7 +630,12 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
         )}
       </header>
 
-      <div ref={messagesContainerRef} onScroll={handleScrollNearBottom} className="flex-1 overflow-y-auto px-4 py-4 lg:px-8 lg:py-6">
+      <div className="relative flex min-h-0 flex-1 flex-col">
+      <div
+        ref={messagesContainerRef}
+        onScroll={handleScrollNearBottom}
+        className={`flex-1 overflow-y-auto px-4 py-4 lg:px-8 lg:py-6 ${showBroadcastOverlay ? "pointer-events-none select-none blur-sm" : ""}`}
+      >
         {isMessagesLoading ? (
           <div className="flex min-h-full flex-col justify-end gap-6">
             {Array.from({ length: 6 }).map((_, idx) => (
@@ -704,7 +785,113 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
         }
       </div>
 
+      {showBroadcastOverlay ? (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/40 p-4">
+          <div className="w-full max-w-[360px] rounded-[16px] border border-gray-9 bg-white p-5 text-center shadow-menu">
+            {isBroadcastReceived ? (
+              !localOffer ? (
+                showOfferForm ? (
+                  <div className="text-left">
+                    <label className="mb-1 block text-[13px] font-medium text-[#030303]">
+                      {String(placeholders.your_offer_price ?? "Your offer price")}
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={offerPrice}
+                      onChange={(e) => setOfferPrice(e.target.value)}
+                      placeholder={String(placeholders.Rs ?? "Rs")}
+                      className="mb-3 w-full rounded-[10px] border border-gray-9 bg-[#EEF2F3] px-4 py-2.5 text-sm text-[#030303] outline-none"
+                    />
+                    <label className="mb-1 block text-[13px] font-medium text-[#030303]">
+                      {String(placeholders.offer_message_placeholder ?? "Message")}
+                    </label>
+                    <textarea
+                      value={offerMessageText}
+                      onChange={(e) => setOfferMessageText(e.target.value)}
+                      rows={3}
+                      placeholder={String(placeholders.offer_message_placeholder ?? "Write your offer message...")}
+                      className="mb-3 w-full resize-none rounded-[10px] border border-gray-9 bg-[#EEF2F3] px-4 py-2.5 text-sm text-[#030303] outline-none"
+                    />
+                    <button
+                      type="button"
+                      disabled={isSubmittingOffer}
+                      onClick={() => handleSubmitOffer()}
+                      className="w-full cursor-pointer rounded-[8px] bg-green-1 py-2.5 text-[14px] font-medium text-white disabled:opacity-50"
+                    >
+                      {isSubmittingOffer
+                        ? "..."
+                        : String(placeholders.submit_offer ?? "Send Offer")}
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <p className="mb-4 text-[14px] text-[#4B514F]">
+                      {String(
+                        placeholders.broadcast_offer_intro ??
+                          "Send an offer to start chatting with this broadcast's owner.",
+                      )}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setShowOfferForm(true)}
+                      className="w-full cursor-pointer rounded-[8px] bg-green-1 py-2.5 text-[14px] font-medium text-white"
+                    >
+                      {String(placeholders.create_offer ?? "Create Offer")}
+                    </button>
+                  </>
+                )
+              ) : localOffer?.status === "declined" ? (
+                <p className="text-[14px] text-[#4B514F]">
+                  {String(placeholders.offer_declined_notice ?? "Your offer was declined")}
+                </p>
+              ) : (
+                <p className="text-[14px] text-[#4B514F]">
+                  {String(placeholders.offer_pending_notice ?? "Offer sent — waiting for a response")}
+                </p>
+              )
+            ) : !localOffer ? (
+              <p className="text-[14px] text-[#4B514F]">
+                {String(placeholders.no_offer_yet_notice ?? "Waiting for an offer from this recipient")}
+              </p>
+            ) : localOffer?.status === "declined" ? (
+              <p className="text-[14px] text-[#4B514F]">
+                {String(placeholders.offer_declined_notice_creator ?? "You declined this offer")}
+              </p>
+            ) : (
+              <div className="text-left">
+                <p className="mb-1 text-[16px] font-medium text-green-1">
+                  {placeholders.Rs} {localOffer?.price}
+                </p>
+                <p className="mb-4 whitespace-pre-wrap text-[14px] text-[#030303]">
+                  {localOffer?.message}
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={isAcceptingOffer || isDecliningOffer}
+                    onClick={() => handleAcceptOffer()}
+                    className="flex-1 cursor-pointer rounded-[8px] bg-green-1 py-2.5 text-[14px] font-medium text-white disabled:opacity-50"
+                  >
+                    {isAcceptingOffer ? "..." : ph("accept")}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isAcceptingOffer || isDecliningOffer}
+                    onClick={() => handleDeclineOffer()}
+                    className="flex-1 cursor-pointer rounded-[8px] border border-gray-9 py-2.5 text-[14px] font-medium text-[#030303] disabled:opacity-50"
+                  >
+                    {isDecliningOffer ? "..." : ph("decline")}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
+      </div>
 
+      {offerAccepted ? (
       <div className="border-t  border-gray-200 bg-[white] px-3 py-2.5 lg:px-7">
         {selectedFile && attachmentPreviewUrl ? (
           <div className="relative mb-2 h-[80px] w-[80px]">
@@ -779,6 +966,7 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
           </div>
         </div>
       </div>
+      ) : null}
 
       {imageLightboxSlides.length > 0 ? (
         <Lightbox
