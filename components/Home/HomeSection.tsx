@@ -78,7 +78,7 @@ function HomeActionCard({
           <div className="flex h-[62px] w-[62px] shrink-0 items-center justify-center rounded-full bg-white">
             <Image src={icon} alt="" className="max-h-[70%] max-w-[70%]" />
           </div>
-          <p className=" flex-1 text-[14px] font-medium leading-snug text-[#001907]">
+          <p className=" flex-1 text-[14px] font-light leading-snug text-[#001907]">
             {renderDescription(description)}
           </p>
           <button
@@ -130,7 +130,7 @@ function HomeActionCard({
             <h3 className="text-[15px] font-semibold leading-snug text-[#001907]">
               {title}
             </h3>
-            <p className="mt-1 text-[14px] font-normal leading-snug text-[#001907]">
+            <p className="mt-1 text-[14px] font-light leading-snug text-[#001907]">
               {renderDescription(description)}
             </p>
           </div>
@@ -138,7 +138,7 @@ function HomeActionCard({
         <DoodleButton
           type="button"
           onClick={onClick}
-          className={`mt-auto flex h-[36px] w-full cursor-pointer items-center justify-center rounded-[8px] px-3 text-center text-[13px] font-medium text-white sm:mt-3.5 lg:mt-4 lg:h-[40px] lg:px-4 ${buttonClass}`}
+          className={`mt-auto flex h-[36px] w-full cursor-pointer items-center justify-center rounded-[8px] px-3 text-center text-[13px] font-semibold text-white sm:mt-3.5 lg:mt-4 lg:h-[40px] lg:px-4 ${buttonClass}`}
         >
           {buttonLabel}
         </DoodleButton>
