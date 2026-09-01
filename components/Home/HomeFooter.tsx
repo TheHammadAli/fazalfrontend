@@ -70,7 +70,7 @@ function FooterColumn({
 }) {
     return (
         <div className={`min-w-0 ${className}`}>
-            <h3 className="text-[15px] font-medium leading-snug text-[#030303] sm:text-[16px]">
+            <h3 className="text-[15px] font-semibold leading-snug text-[#030303] sm:text-[16px]">
                 {title}
             </h3>
             <div className="mt-3 sm:mt-4">{children}</div>
