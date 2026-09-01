@@ -244,7 +244,7 @@ function FinishSignup() {
           onSubmit={handleSubmit}
           className="max-w-[500px] flex flex-col items-center lg:items-start lg:max-w-full"
         >
-          <h1 className="text-black-1 font-medium text-[22px] lg:w-[334px]  leading-[30px] ">
+          <h1 className="text-black-1 font-bold text-[22px] lg:w-[334px]  leading-[30px] ">
             Finish Signing up{" "}
           </h1>
           {mounted && (

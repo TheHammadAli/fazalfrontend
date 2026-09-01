@@ -31,7 +31,7 @@ function Wellcome() {
             </button>
           </div>
 
-          <h1 className="w-full text-[22px] font-medium leading-[30px] text-black-1 ltr:text-left rtl:text-right">
+          <h1 className="w-full text-[22px] font-bold leading-[30px] text-black-1 ltr:text-left rtl:text-right">
             {info_messages.welcome_market}
           </h1>
           <p className="text-[16px] font-light text-gray-8 ltr:text-left rtl:text-right">

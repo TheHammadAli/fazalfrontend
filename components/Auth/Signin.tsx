@@ -158,7 +158,7 @@ function Signin() {
         className="flex w-full min-w-0 flex-col items-center px-5 pt-[80px] sm:px-[50px] lg:w-1/2 lg:justify-between xl:px-[150px]"
       >
         <div className="max-w-[500px] w-full">
-          <h1 className="text-black-1 font-medium text-[22px] text-center">
+          <h1 className="text-black-1 font-bold text-[22px] text-center">
             Sign in
           </h1>
           <p className="font-light text-[14px] text-center text-gray-8">
