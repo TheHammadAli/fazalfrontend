@@ -90,7 +90,7 @@ function AllCategoriesModal({
                     className="h-[26px] w-[26px] object-contain"
                   />
                 </div>
-                <p className="truncate-safe w-full min-w-0 text-[13px] font-medium text-[#333333]">
+                <p className="truncate-safe w-full min-w-0 text-[13px] font-semibold text-[#333333]">
                   {name}
                 </p>
               </button>

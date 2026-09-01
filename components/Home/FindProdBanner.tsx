@@ -22,7 +22,7 @@ function FindProdBanner() {
 
             <div className="relative z-10 flex  flex-col items-center gap-3 px-3  sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 lg:px-8  py-4 sm:py-0">
                 <div className="min-w-0 w-full max-w-full sm:max-w-[52%]">
-                    <h2 className="text-[24px] font-medium rtl:text-right text-center sm:text-left  text-white sm:text-[36px] leading-tight">
+                    <h2 className="text-[24px] font-semibold rtl:text-right text-center sm:text-left  text-white sm:text-[36px] leading-tight">
                         {info_messages.find_products_services}
                         <span className="block">{info_messages.near_you}</span>
                     </h2>

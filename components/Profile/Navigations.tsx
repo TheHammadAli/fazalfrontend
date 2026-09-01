@@ -132,7 +132,7 @@ function Navigations({
               }}
             >
               <Image src={tab.icon} alt="icon" className="block" />
-              <h2 className="font-medium text-black-1 text-[15px]">
+              <h2 className="font-semibold text-black-1 text-[15px]">
                 {placeholders[tab.title as keyof typeof placeholders]}
               </h2>
             </div>
@@ -147,7 +147,7 @@ function Navigations({
         }
       >
         <Image src={privacyIcon} alt="icon" className="" />
-        <h2 className="font-medium text-black-1 text-[15px] first-letter:capitalize">
+        <h2 className="font-semibold text-black-1 text-[15px] first-letter:capitalize">
           {placeholders.privacy_policy}
         </h2>
       </div>
@@ -158,7 +158,7 @@ function Navigations({
         }
       >
         <Image src={privacyIcon} alt="icon" className="" />
-        <h2 className="font-medium text-black-1 text-[15px] first-letter:capitalize">
+        <h2 className="font-semibold text-black-1 text-[15px] first-letter:capitalize">
           {placeholders.terms_condition}
         </h2>
       </div>
@@ -169,7 +169,7 @@ function Navigations({
         }
       >
         <Image src={WhatsAppIcon} alt="icon" className="h-[22px] w-[22px]" />
-        <h2 className="font-medium text-black-1 text-[15px] first-letter:capitalize">
+        <h2 className="font-semibold text-black-1 text-[15px] first-letter:capitalize">
           {placeholders.report_a_problem}
         </h2>
       </div>
@@ -183,7 +183,7 @@ function Navigations({
         }}
       >
         <Image src={settingIcon} alt="icon" className="" />
-        <h2 className="font-medium text-black-1 text-[15px] first-letter:capitalize">
+        <h2 className="font-semibold text-black-1 text-[15px] first-letter:capitalize">
           {placeholders.settings}
         </h2>
       </div>
@@ -192,7 +192,7 @@ function Navigations({
         onClick={() => router.push("/about")}
       >
         <Image src={aboutIcon} alt="icon" className="" />
-        <h2 className="font-medium text-black-1 text-[15px] first-letter:capitalize">
+        <h2 className="font-semibold text-black-1 text-[15px] first-letter:capitalize">
           {placeholders.about_market}
         </h2>
       </div> */}
@@ -203,7 +203,7 @@ function Navigations({
         }}
       >
         <Image src={privacyIcon} alt="icon" className="" />
-        <h2 className="font-medium text-black-1 text-[15px] first-letter:capitalize">
+        <h2 className="font-semibold text-black-1 text-[15px] first-letter:capitalize">
           {placeholders.logout}
         </h2>
       </div>

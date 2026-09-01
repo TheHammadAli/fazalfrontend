@@ -164,7 +164,7 @@ function CategoryCard({
                     )}
                 </div>
                 <div className="min-w-0 flex-1">
-                    <p className="truncate-safe w-full min-w-0 text-[14px] font-medium text-[#333333] rtl:text-right">
+                    <p className="truncate-safe w-full min-w-0 text-[14px] font-semibold text-[#333333] rtl:text-right">
                         {name}
                     </p>
                     <p className=" text-[13px] font-normal leading-[1.6] py-0.5 text-[#333333] rtl:text-right">
@@ -267,7 +267,7 @@ function ProductCategories() {
     return (
         <section className="mt-6 sm:mt-8">
             <div className="flex items-center justify-between gap-3">
-                <h2 className="text-[18px] font-medium text-[#001907] ">
+                <h2 className="text-[18px] font-semibold text-[#001907] ">
                     {info_messages.product_categories}
                 </h2>
             </div>

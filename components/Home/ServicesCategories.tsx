@@ -123,7 +123,7 @@ function ServiceCategoryCard({
                     className="h-6 w-6 shrink-0 object-contain"
                 />
             )}
-            <p className="truncate-safe mt-3 w-full min-w-0 text-[13px] font-medium text-[#030303] rtl:text-right">
+            <p className="truncate-safe mt-3 w-full min-w-0 text-[13px] font-semibold text-[#030303] rtl:text-right">
                 {name}
             </p>
         </div>
@@ -223,7 +223,7 @@ export default function ServicesCategories() {
 
     return (
         <section className="mt-6 sm:mt-8">
-            <h2 className="text-[18px] font-medium text-[#001907]">
+            <h2 className="text-[18px] font-semibold text-[#001907]">
                 {info_messages.services_categories}
             </h2>
 

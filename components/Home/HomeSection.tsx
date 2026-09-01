@@ -100,7 +100,7 @@ function HomeActionCard({
             <Image src={icon} alt="" className="max-h-[70%] max-w-[70%] h-[18px] w-[18px]" />
           </div>
           <div className="flex items-center justify-between w-full">
-            <h3 className="min-w-0 flex-1 text-[14px] font-medium leading-snug text-[#001907]">
+            <h3 className="min-w-0 flex-1 text-[14px] font-semibold leading-snug text-[#001907]">
               {title}
             </h3>
             <Image

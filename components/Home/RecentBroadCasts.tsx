@@ -386,7 +386,7 @@ function RecentBroadCasts() {
     return (
         <section className="mt-6 sm:mt-8">
             <div className="flex items-center justify-between gap-3">
-                <h2 className="text-[18px] font-medium text-[#001907]">
+                <h2 className="text-[18px] font-semibold text-[#001907]">
                     {info_messages.recent_broadcasts}
                 </h2>
                 <button
