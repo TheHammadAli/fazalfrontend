@@ -162,7 +162,7 @@ export default function MobileHeader({
                           alt="icon"
                         />
                         <h2
-                          className={`font-normal text-[14px] ${active ? "text-green-1" : "text-gray-8"
+                          className={`font-semibold text-[14px] ${active ? "text-green-1" : "text-gray-8"
                             } leading-none`}
                         >
                           {
@@ -213,7 +213,7 @@ export default function MobileHeader({
                           }`}
                       />
                       <h2
-                        className={`font-normal text-[14px] ${path.includes("/profile") ? "text-green-1" : "text-gray-8"
+                        className={`font-semibold text-[14px] ${path.includes("/profile") ? "text-green-1" : "text-gray-8"
                           } leading-none`}
                       >
                         {pages.profile}
@@ -227,7 +227,7 @@ export default function MobileHeader({
                         setMobileMenuOpen(false);
                         router.push("/selling/list-product?type=personal");
                       }}
-                      className="border-green-1 mt-4 cursor-pointer border-[3px] bg-[#DFF4F4] text-[13px] font-medium text-green-1 px-4 py-2 rounded-xl h-[42px] w-full"
+                      className="border-green-1 mt-4 cursor-pointer border-[3px] bg-[#DFF4F4] text-[13px] font-semibold text-green-1 px-4 py-2 rounded-xl h-[42px] w-full"
                     >
                       {info_messages.post_an_ad}
                     </button>

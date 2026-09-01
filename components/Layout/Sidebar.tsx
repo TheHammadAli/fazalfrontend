@@ -174,7 +174,7 @@ function Sidebar({
 
                 <span className="max-w-0 overflow-hidden transition-[max-width] duration-200 ease-out group-hover/nav-links:max-w-[140px]">
                   <h2
-                    className={`inline-block font-medium text-[14px]  leading-none whitespace-nowrap opacity-0 -translate-x-3 transition-all duration-200 ease-out group-hover/nav-links:translate-x-0 group-hover/nav-links:opacity-100 rtl:translate-x-3 ${isLinkActive ? "text-green-1" : "text-gray-8"
+                    className={`inline-block font-semibold text-[14px]  leading-none whitespace-nowrap opacity-0 -translate-x-3 transition-all duration-200 ease-out group-hover/nav-links:translate-x-0 group-hover/nav-links:opacity-100 rtl:translate-x-3 ${isLinkActive ? "text-green-1" : "text-gray-8"
                       }`}
                   >
                     {
@@ -265,7 +265,7 @@ function Sidebar({
 
               <span className="max-w-0 overflow-hidden transition-[max-width] duration-200 ease-out group-hover/nav-links:max-w-[140px]">
                 <h2
-                  className={`inline-block font-medium text-[14px] leading-none whitespace-nowrap opacity-0 -translate-x-3 transition-all duration-200 ease-out group-hover/nav-links:translate-x-0 group-hover/nav-links:opacity-100 rtl:translate-x-3 ${path.includes("/profile") ? "text-green-1" : "text-gray-8"
+                  className={`inline-block font-semibold text-[14px] leading-none whitespace-nowrap opacity-0 -translate-x-3 transition-all duration-200 ease-out group-hover/nav-links:translate-x-0 group-hover/nav-links:opacity-100 rtl:translate-x-3 ${path.includes("/profile") ? "text-green-1" : "text-gray-8"
                     }`}
                 >
                   {pages.profile}
@@ -286,7 +286,7 @@ function Sidebar({
 
             onClick={() => router.push("/selling/list-product?type=personal")}
 
-            className="border-green-1 mx-4 cursor-pointer border-[3px] bg-[#DFF4F4] text-[13px] font-medium text-green-1 px-4 py-2 rounded-xl h-[42px] w-[176px]"
+            className="border-green-1 mx-4 cursor-pointer border-[3px] bg-[#DFF4F4] text-[13px] font-semibold text-green-1 px-4 py-2 rounded-xl h-[42px] w-[176px]"
 
           >
 
