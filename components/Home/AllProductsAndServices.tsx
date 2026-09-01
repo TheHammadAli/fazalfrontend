@@ -142,7 +142,7 @@ function CatalogCard({
                         ({item.reviewCount ?? 0})
                     </span>
                 </div> */}
-                <h2 className="line-clamp-1 text-[16px] font-medium text-black-1 transition-colors first-letter:capitalize group-hover:text-green-1">
+                <h2 className="line-clamp-1 text-[16px] font-semibold text-black-1 transition-colors first-letter:capitalize group-hover:text-green-1">
                     {item.title}
                 </h2>
             </div>
