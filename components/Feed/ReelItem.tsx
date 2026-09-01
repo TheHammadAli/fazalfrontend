@@ -280,12 +280,21 @@ export default function ReelItem({
                     </DoodleButton>
                 </div>
                 <div className=" flex flex-col items-center gap-4">
-                    <div
-                        className="flex h-[54px] w-[54px] shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-[#2C2C2C]/80"
-                        onClick={(e) => e.stopPropagation()}
+                    <button
+                        type="button"
+                        aria-label={type === "products" ? ph("shop_now") : ph("book_now")}
+                        className="flex h-[54px] w-[54px] shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-white bg-[#2C2C2C]/80"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (type === "products") {
+                                router.push(`/buy-product?id=${item.id}`);
+                            } else if (type === "services") {
+                                router.push(`/book-service?id=${item.id}`);
+                            }
+                        }}
                     >
                         <User className="h-7 w-7 text-green-1" strokeWidth={1.75} aria-hidden />
-                    </div>
+                    </button>
 
                     <div className="flex flex-col items-center gap-1">
                         <button
