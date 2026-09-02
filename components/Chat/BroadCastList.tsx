@@ -9,7 +9,7 @@ type BroadcastItem = {
     type: "Product" | "Service";
     category: { name: { en: string; ur: string } };
     message: string;
-    recipients: number;
+    threadCount: number;
     radius: number;
     createdAt: string;
     threadId?: string;
@@ -68,7 +68,7 @@ function BroadCastList({ items, onScroll, onSelectItem, chatId, activeTab }: Bro
                         </div>
 
                         <p className="mt-1 text-[14px] rtl:text-right ltr:text-left  font-normal text-black-1">
-                            {item?.recipients || 0} {ph("recipients")} <span className="mx-3 text-gray-2">|</span>{" "}
+                            {item?.threadCount || 0} {ph("recipients")} <span className="mx-3 text-gray-2">|</span>{" "}
                             <span className="text-[#FF8A00]">
                                 {item?.radius ?? ""}{" "}
                                 {placeholders["km" as keyof typeof placeholders] ?? "km"}

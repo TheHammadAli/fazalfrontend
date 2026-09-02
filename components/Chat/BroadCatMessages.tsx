@@ -15,7 +15,7 @@ type BroadcastItem = {
     type: "Product" | "Service";
     category: { name: { en: string; ur: string } };
     message: string;
-    recipients: number;
+    threadCount: number;
     radius: number;
     createdAt: string;
 };
