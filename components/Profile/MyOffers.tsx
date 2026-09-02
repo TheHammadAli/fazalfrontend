@@ -197,6 +197,9 @@ function ReceivedBroadcastPanel({
                     <StatusBadge status={offer.status} ph={ph} />
                   </div>
                   <p className="mt-2 whitespace-pre-wrap text-[14px] text-black-1">{offer.message}</p>
+                  <p className="mt-1 text-[12px] text-gray-8">
+                    {formatFromNowShort(offer.createdAt, currentLanguage as "en" | "ur")}
+                  </p>
                   {offer.status === "pending" ? (
                     <div className="mt-3 flex items-center gap-2">
                       <DoodleButton
@@ -258,20 +261,23 @@ function ReceivedBroadcastPanel({
 
   return (
     <>
-      <div className="divide-y divide-gray-9">
+      <div className="space-y-3">
         {items.map((item) => (
           <button
             key={item.broadcastId}
             type="button"
             onClick={() => setSelected(item)}
-            className="w-full cursor-pointer py-4 text-left hover:bg-gray-50"
+            className="w-full cursor-pointer rounded-[12px] border border-gray-9 p-4 text-left hover:bg-gray-50"
           >
             <div className="flex items-center justify-between gap-2">
-              <p className="min-w-0 truncate text-[15px] font-medium text-black-1">{item.broadcast?.message}</p>
+              <span className="text-[12px] font-medium text-green-1">
+                {item.broadcast?.type === "product" ? ph("product") : ph("service")}
+              </span>
               <span className="shrink-0 rounded-full bg-[#3C9197] px-2 py-0.5 text-[12px] font-medium text-white">
                 {ph("offers_count").replace("{count}", String(item.offerCount))}
               </span>
             </div>
+            <p className="mt-1.5 truncate text-[15px] font-medium text-black-1">{item.broadcast?.message}</p>
             <p className="mt-1 text-[13px] text-gray-8">
               {formatFromNowShort(item.latestOfferAt, currentLanguage as "en" | "ur")}
             </p>
@@ -301,7 +307,7 @@ function ReceivedProductPanel({
   selected: OfferedProductItem | null;
   setSelected: (v: OfferedProductItem | null) => void;
 }) {
-  const { placeholders } = useDictionary();
+  const { placeholders, currentLanguage } = useDictionary();
   const ph = (key: string) => String((placeholders as any)[key] ?? key);
   const userId = getUserId() ?? "";
   const { onInitiateChat } = useInitiateChat();
@@ -385,6 +391,9 @@ function ReceivedProductPanel({
                     <StatusBadge status={offer.status} ph={ph} />
                   </div>
                   <p className="mt-2 whitespace-pre-wrap text-[14px] text-black-1">{offer.message}</p>
+                  <p className="mt-1 text-[12px] text-gray-8">
+                    {formatFromNowShort(offer.createdAt, currentLanguage as "en" | "ur")}
+                  </p>
                   {offer.status === "pending" ? (
                     <div className="mt-3 flex items-center gap-2">
                       <DoodleButton
@@ -446,13 +455,13 @@ function ReceivedProductPanel({
 
   return (
     <>
-      <div className="divide-y divide-gray-9">
+      <div className="space-y-3">
         {items.map((item) => (
           <button
             key={item.productId}
             type="button"
             onClick={() => setSelected(item)}
-            className="flex w-full cursor-pointer items-center gap-3 py-4 text-left hover:bg-gray-50"
+            className="flex w-full cursor-pointer items-center gap-3 rounded-[12px] border border-gray-9 p-3 text-left hover:bg-gray-50"
           >
             <Image
               src={item.product?.images?.[0] || noImageAvtar}
@@ -469,7 +478,10 @@ function ReceivedProductPanel({
                   {ph("offers_count").replace("{count}", String(item.offerCount))}
                 </span>
               </div>
-              <p className="mt-0.5 text-[13px] text-gray-8">{item.product?.price ? `${ph("Rs")} ${item.product.price}` : ""}</p>
+              <p className="mt-0.5 text-[13px] font-medium text-green-1">{item.product?.price ? `${ph("Rs")} ${item.product.price}` : ""}</p>
+              <p className="mt-0.5 text-[12px] text-gray-8">
+                {formatFromNowShort(item.latestOfferAt, currentLanguage as "en" | "ur")}
+              </p>
             </div>
           </button>
         ))}
@@ -494,14 +506,16 @@ type SentOfferItem = {
   id: string;
   kind: "broadcast" | "product";
   title: string;
+  message: string;
   price: number;
   status: "pending" | "accepted" | "declined";
   createdAt: string;
+  image?: string;
   navigate: () => void;
 };
 
 function SentOffersPanel() {
-  const { placeholders } = useDictionary();
+  const { placeholders, currentLanguage } = useDictionary();
   const ph = (key: string) => String((placeholders as any)[key] ?? key);
   const router = useRouter();
   const userId = getUserId() ?? "";
@@ -522,6 +536,7 @@ function SentOffersPanel() {
     id: offer._id,
     kind: "broadcast",
     title: offer.broadcast?.message ?? "",
+    message: offer.message ?? "",
     price: offer.price,
     status: offer.status,
     createdAt: offer.createdAt,
@@ -536,9 +551,11 @@ function SentOffersPanel() {
     id: offer._id,
     kind: "product",
     title: offer.product?.title ?? "",
+    message: offer.message ?? "",
     price: offer.price,
     status: offer.status,
     createdAt: offer.createdAt,
+    image: offer.product?.images?.[0],
     navigate: () => {
       if (offer.status === "accepted" && offer.seller?._id) {
         onInitiateChat(userId, offer.seller._id);
@@ -573,18 +590,36 @@ function SentOffersPanel() {
           key={`${item.kind}-${item.id}`}
           type="button"
           onClick={item.navigate}
-          className="w-full cursor-pointer rounded-[12px] border border-gray-9 p-4 text-left hover:bg-gray-50"
+          className="flex w-full cursor-pointer items-start gap-3 rounded-[12px] border border-gray-9 p-4 text-left hover:bg-gray-50"
         >
-          <div className="flex items-center justify-between gap-2">
-            <span className="shrink-0 rounded-full bg-[#EEF2F3] px-2 py-0.5 text-[11px] font-medium text-[#4B514F]">
-              {item.kind === "broadcast" ? ph("offer_type_broadcast") : ph("offer_type_product")}
-            </span>
-            <StatusBadge status={item.status} ph={ph} />
+          {item.kind === "product" ? (
+            <Image
+              src={item.image || noImageAvtar}
+              alt={item.title}
+              width={44}
+              height={44}
+              unoptimized
+              className="h-[44px] w-[44px] shrink-0 rounded-[8px] object-cover"
+            />
+          ) : null}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <span className="shrink-0 rounded-full bg-[#EEF2F3] px-2 py-0.5 text-[11px] font-medium text-[#4B514F]">
+                {item.kind === "broadcast" ? ph("offer_type_broadcast") : ph("offer_type_product")}
+              </span>
+              <StatusBadge status={item.status} ph={ph} />
+            </div>
+            <p className="mt-2 truncate text-[15px] font-medium text-black-1">{item.title}</p>
+            <p className="mt-0.5 text-[14px] font-medium text-green-1">
+              {ph("Rs")} {item.price}
+            </p>
+            {item.message ? (
+              <p className="mt-1 whitespace-pre-wrap text-[13px] text-black-1">{item.message}</p>
+            ) : null}
+            <p className="mt-1 text-[12px] text-gray-8">
+              {formatFromNowShort(item.createdAt, currentLanguage as "en" | "ur")}
+            </p>
           </div>
-          <p className="mt-2 truncate text-[15px] font-medium text-black-1">{item.title}</p>
-          <p className="mt-0.5 text-[14px] font-medium text-green-1">
-            {ph("Rs")} {item.price}
-          </p>
         </button>
       ))}
     </div>
