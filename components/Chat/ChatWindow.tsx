@@ -634,7 +634,7 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
       <div
         ref={messagesContainerRef}
         onScroll={handleScrollNearBottom}
-        className={`flex-1 overflow-y-auto px-4 py-4 lg:px-8 lg:py-6 ${showBroadcastOverlay ? "pointer-events-none select-none blur-sm" : ""}`}
+        className="flex-1 overflow-y-auto px-4 py-4 lg:px-8 lg:py-6"
       >
         {isMessagesLoading ? (
           <div className="flex min-h-full flex-col justify-end gap-6">
@@ -786,7 +786,7 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
       </div>
 
       {showBroadcastOverlay ? (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/40 p-4">
+        <div className="absolute inset-0 z-10 flex items-center justify-center p-4">
           <div className="w-full max-w-[360px] rounded-[16px] border border-gray-9 bg-white p-5 text-center shadow-menu">
             {isBroadcastReceived ? (
               !localOffer ? (

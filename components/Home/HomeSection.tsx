@@ -78,7 +78,7 @@ function HomeActionCard({
           <div className="flex h-[62px] w-[62px] shrink-0 items-center justify-center rounded-full bg-white">
             <Image src={icon} alt="" className="max-h-[70%] max-w-[70%]" />
           </div>
-          <p className=" flex-1 text-[14px] font-light leading-snug text-[#001907]">
+          <p className=" flex-1 text-[14px] font-medium leading-snug text-[#001907]">
             {renderDescription(description)}
           </p>
           <button
@@ -130,7 +130,7 @@ function HomeActionCard({
             <h3 className="text-[15px] font-semibold leading-snug text-[#001907]">
               {title}
             </h3>
-            <p className="mt-1 text-[14px] font-light leading-snug text-[#001907]">
+            <p className="mt-1 text-[14px] font-medium leading-snug text-[#001907]">
               {renderDescription(description)}
             </p>
           </div>
