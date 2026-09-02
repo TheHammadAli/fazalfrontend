@@ -16,6 +16,15 @@ function getFirebaseApp() {
 
 let messagingInstance: Messaging | null = null;
 
+/** Registering a service worker while the document is still loading/transitioning throws
+ *  InvalidStateError in some browsers — wait for the page to be fully settled first. */
+function waitForDocumentReady(): Promise<void> {
+  if (document.readyState === "complete") return Promise.resolve();
+  return new Promise((resolve) => {
+    window.addEventListener("load", () => resolve(), { once: true });
+  });
+}
+
 /**
  * Registers the messaging service worker and returns an FCM token for this
  * browser, or null if push isn't supported here / permission isn't granted
@@ -31,6 +40,7 @@ export async function getPushToken(): Promise<string | null> {
   try {
     if (!(await isSupported())) return null;
 
+    await waitForDocumentReady();
     const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
     if (!messagingInstance) {
       messagingInstance = getMessaging(getFirebaseApp());

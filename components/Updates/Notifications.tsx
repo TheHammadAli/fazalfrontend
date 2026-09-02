@@ -196,6 +196,9 @@ function Notifications({ setOpenSidebar, unreadCount = 0, setReadCount }: Notifi
             case "ORDER":
                 router.push(`/profile?tab=my_orders`);
                 break;
+            case "REPORT":
+                router.push(`/profile?tab=my_reports`);
+                break;
 
             default:
                 break;

@@ -16,7 +16,7 @@ import MyRequests from "./MyRequests";
 import MyJobs from "./MyJobs";
 import Favourites from "./Favourites";
 import MyReports from "./MyReports";
-import MyBroadcastOffers from "./MyBroadcastOffers";
+import MyOffers from "./MyOffers";
 import Settings from "./Settings";
 import ProfileInfo from "./ProfileInfo";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
@@ -62,7 +62,7 @@ function Profile() {
       my_jobs: <MyJobs />,
       favourites: <Favourites />,
       my_reports: <MyReports />,
-      broadcast_offers: <MyBroadcastOffers />,
+      broadcast_offers: <MyOffers />,
       settings: <Settings />,
       profile_info: <ProfileInfo toggle={toggle} setToggle={setToggle} />,
     }),

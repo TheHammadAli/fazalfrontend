@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import { Heart, Share2, Flag } from "lucide-react";
+import { Heart, Share2, Flag, Tag } from "lucide-react";
 import chevron from "@/assets/icons/chev-down-icon.svg";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
 import noImageAvtar from "@/assets/images/no-image-av.png";
@@ -21,6 +21,8 @@ import Modal from "../Ui/Modals/Modal";
 import SharePostModal from "../Ui/SharePostModal";
 import ReportModal, { type ReportReason } from "../Ui/ReportModal";
 import { useCreateReportMutation } from "@/store/services/reportsService";
+import MakeOfferModal from "../Ui/MakeOfferModal";
+import { useSubmitProductOfferMutation } from "@/store/services/productOfferService";
 import DoodleButton from "@/components/Ui/DoodleButton";
 import { useRouter } from "next/navigation";
 import viewShopIcon from "@/assets/icons/view-shop-icon.svg";
@@ -156,11 +158,14 @@ function BuyProductDetail({
   const { pages, placeholders, currentLanguage, info_messages, error_messages } = useDictionary();
   const sharePostRef = React.useRef<HTMLDivElement>(null);
   const reportModalRef = React.useRef<HTMLDivElement>(null);
+  const offerModalRef = React.useRef<HTMLDivElement>(null);
   const [type, setType] = useState("image");
   const [typeIndex, setTypeIndex] = useState(0);
   const [shareModal, setShareModal] = useState(false);
   const [reportModal, setReportModal] = useState(false);
+  const [offerModal, setOfferModal] = useState(false);
   const [createReport, { isLoading: isSubmittingReport }] = useCreateReportMutation();
+  const [submitProductOffer, { isLoading: isSubmittingOffer }] = useSubmitProductOfferMutation();
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [imageLightboxOpen, setImageLightboxOpen] = useState(false);
@@ -314,6 +319,26 @@ function BuyProductDetail({
   const onReportClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     requireSignIn(() => setReportModal(true));
+  };
+
+  const onMakeOfferClick = () => {
+    requireSignIn(() => setOfferModal(true));
+  };
+
+  const handleSubmitOffer = async (payload: { price: number; message: string }) => {
+    if (!productId) return;
+    try {
+      await submitProductOffer({
+        productId,
+        price: payload.price,
+        message: payload.message,
+      }).unwrap();
+      toast.success(String(placeholders.offer_submitted_success ?? "Offer submitted"));
+      setOfferModal(false);
+    } catch (err) {
+      const errorData = err as { data?: { message?: string } };
+      toast.error(errorData?.data?.message ?? error_messages.something_went_wrong);
+    }
   };
 
   const handleSubmitReport = async (payload: { reason: ReportReason; details: string }) => {
@@ -479,6 +504,21 @@ function BuyProductDetail({
         centered={true}
       >
         <ReportModal setOpen={setReportModal} onSubmit={handleSubmitReport} loading={isSubmittingReport} />
+      </Modal>
+      <Modal
+        editModalRef={offerModalRef}
+        open={offerModal}
+        setOpen={setOfferModal}
+        centered={true}
+      >
+        <MakeOfferModal
+          setOpen={setOfferModal}
+          productImage={product?.data?.images?.[0]}
+          productTitle={product?.data?.title ?? ""}
+          productPrice={product?.data?.price ?? ""}
+          onSubmit={handleSubmitOffer}
+          loading={isSubmittingOffer}
+        />
       </Modal>
       <div className="h-full min-h-screen flex flex-col items-center">
         <div className="px-5 sm:px-10 h-[61px] border-b-[1px] border-gray-9 bg-white w-full  flex justify-center">
@@ -713,14 +753,24 @@ function BuyProductDetail({
                   </div>
                 )}
                 {!isOwner && (
-                  <button
-                    type="button"
-                    onClick={onReportClick}
-                    className="mt-3 flex h-[42px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#E5E5E5] text-[14px] font-medium text-[#4B514F] hover:border-red-1 hover:text-red-1"
-                  >
-                    <Flag className="h-4 w-4 shrink-0" strokeWidth={2} />
-                    {placeholders["report" as keyof typeof placeholders] ?? "Report"}
-                  </button>
+                  <div className="mt-3 flex gap-3">
+                    <DoodleButton
+                      type="button"
+                      onClick={onMakeOfferClick}
+                      className="flex h-[46px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-green-1 text-[16px] font-medium text-white"
+                    >
+                      <Tag className="h-5 w-5 shrink-0" strokeWidth={2} />
+                      {placeholders.make_an_offer}
+                    </DoodleButton>
+                    <button
+                      type="button"
+                      onClick={onReportClick}
+                      className="flex h-[46px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#E5E5E5] text-[16px] font-medium text-[#4B514F] hover:border-red-1 hover:text-red-1"
+                    >
+                      <Flag className="h-5 w-5 shrink-0" strokeWidth={2} />
+                      {placeholders["report" as keyof typeof placeholders] ?? "Report"}
+                    </button>
+                  </div>
                 )}
                 {showShopActions && <div className="mt-2 flex items-center justify-center gap-2">
                   <Image

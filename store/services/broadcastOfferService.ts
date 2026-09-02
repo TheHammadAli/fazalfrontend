@@ -17,6 +17,13 @@ export const broadcastOfferService = baseApi.injectEndpoints({
       }),
       providesTags: ["BROADCAST_OFFER"],
     }),
+    getMySentBroadcastOffers: build.query({
+      query: ({ page, limit }: { page: number; limit: number }) => ({
+        url: `/broadcast/offers/my/sent?page=${page}&limit=${limit}`,
+        method: "GET",
+      }),
+      providesTags: ["BROADCAST_OFFER"],
+    }),
     getOffersForBroadcast: build.query({
       query: ({ broadcastId }: { broadcastId: string }) => ({
         url: `/broadcast/offers/broadcast/${broadcastId}`,
@@ -44,6 +51,7 @@ export const broadcastOfferService = baseApi.injectEndpoints({
 export const {
   useSubmitBroadcastOfferMutation,
   useGetMyOfferedBroadcastsQuery,
+  useGetMySentBroadcastOffersQuery,
   useGetOffersForBroadcastQuery,
   useAcceptBroadcastOfferMutation,
   useDeclineBroadcastOfferMutation,
