@@ -186,7 +186,7 @@ function ProfileInfo({ toggle, setToggle }: ProfileInfoTypes) {
         address: location?.description,
         location: {
           type: "Point",
-          coordinates: [location?.coordinates?.lat, location?.coordinates?.lng],
+          coordinates: [location?.coordinates?.lng, location?.coordinates?.lat],
         },
       };
       const formData = new FormData();
