@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
+import { Heart, Share2, Flag } from "lucide-react";
 import chevron from "@/assets/icons/chev-down-icon.svg";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
 import noImageAvtar from "@/assets/images/no-image-av.png";
@@ -20,7 +21,6 @@ import Modal from "../Ui/Modals/Modal";
 import SharePostModal from "../Ui/SharePostModal";
 import ReportModal, { type ReportReason } from "../Ui/ReportModal";
 import { useCreateReportMutation } from "@/store/services/reportsService";
-import detailShareIcon from "@/assets/icons/detial-share-icon.svg";
 import DoodleButton from "@/components/Ui/DoodleButton";
 import { useRouter } from "next/navigation";
 import viewShopIcon from "@/assets/icons/view-shop-icon.svg";
@@ -541,23 +541,15 @@ function BuyProductDetail({
                         <button
                           type="button"
                           onClick={onLikeClick}
-                          className={`flex h-[26px] w-[26px] cursor-pointer items-center shadow-menu justify-center rounded-full text-white bg-white`}
+                          className={`flex h-[30px] w-[30px] cursor-pointer items-center shadow-menu justify-center rounded-full text-white bg-white`}
                           aria-label="Like"
                         >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
+                          <Heart
+                            className="h-5 w-5"
                             stroke={isLiked ? undefined : "black"}
-                            strokeWidth={isLiked ? undefined : 2.5}
+                            strokeWidth={isLiked ? undefined : 2.25}
                             fill={isLiked ? "green" : "none"}
-                            className="h-4 w-4"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"
-                            />
-                          </svg>
+                          />
                         </button>
                         {likesCount > 0 && (
                           <span className="rounded-full bg-[#2C2C2C]/80 px-1.5 py-[3px] text-[11px] font-medium text-white">
@@ -568,38 +560,11 @@ function BuyProductDetail({
                       <button
                         type="button"
                         onClick={onShareClick}
-                        className="flex h-[26px] w-[26px] cursor-pointer items-center shadow-menu justify-center rounded-full bg-white text-white"
+                        className="flex h-[30px] w-[30px] cursor-pointer items-center shadow-menu justify-center rounded-full bg-white text-black"
                         aria-label="Share"
                       >
-                        <Image
-                          className="h-4 w-4"
-                          src={detailShareIcon}
-                          alt="share-simple-icon"
-                        />
+                        <Share2 className="h-5 w-5" strokeWidth={2.25} />
                       </button>
-                      {!isOwner && (
-                        <button
-                          type="button"
-                          onClick={onReportClick}
-                          className="flex h-[26px] w-[26px] cursor-pointer items-center shadow-menu justify-center rounded-full bg-white text-white"
-                          aria-label="Report"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="black"
-                            strokeWidth={2}
-                            className="h-4 w-4"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"
-                            />
-                          </svg>
-                        </button>
-                      )}
                     </div>
                   )}
                 </div>
@@ -682,6 +647,92 @@ function BuyProductDetail({
                 <div className="text-[#3C9197] text-[28px] font-medium mt-2 ">
                   {placeholders.Rs} {product?.data?.price ?? ""}
                 </div>
+
+                {mounted && showPurchaseActions && (
+                  <button
+                    type="button"
+                    disabled={
+                      Object.keys(selectedVariants).length !==
+                      product?.data?.parameters?.length
+                    }
+                    onClick={handleAddToCart}
+                    className="mt-8 flex h-[46px] w-full cursor-pointer items-center justify-center rounded-xl border border-green-1 bg-white text-[16px] font-medium text-green-1 hover:bg-green-1 hover:text-white disabled:pointer-events-none disabled:opacity-50"
+                  >
+                    {placeholders.add_cart}
+                  </button>
+                )}
+                {mounted && showPurchaseActions && (
+                  <DoodleButton
+                    type="button"
+                    disabled={
+                      Object.keys(selectedVariants).length !==
+                      product?.data?.parameters?.length
+                    }
+                    onClick={() => requireSignIn(() => setStep?.("cart"))}
+                    className="mt-4 flex h-[46px] w-full cursor-pointer items-center justify-center rounded-xl border border-green-1 bg-green-1 text-[16px] font-medium text-white hover:bg-white hover:text-green-1 disabled:pointer-events-none disabled:opacity-50"
+                  >
+                    {placeholders.buy_now}
+                  </DoodleButton>
+                )}
+
+                {showShopActions && (
+                  <div className="mt-8 space-y-3">
+                    <DoodleButton
+                      type="button"
+                      disabled={isLoading}
+                      onClick={handleChatStore}
+                      className="flex h-[46px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-green-1 text-[16px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      {isLoading ? (
+                        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                      ) : (
+                        <ChatStoreIcon className="h-5 w-5 shrink-0" />
+                      )}
+                      {hasShop ? placeholders.chat_store : placeholders.message_seller}
+                    </DoodleButton>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={handleWhatsAppContact}
+                        className={`flex h-[46px] cursor-pointer items-center justify-center gap-2 rounded-xl border border-green-1 bg-white text-[16px] font-medium text-green-1 ${hasShop ? "flex-1" : "w-full"}`}
+                      >
+                        <WhatsAppIcon className="h-5 w-5 shrink-0 text-[#25D366]" />
+                        {placeholders.whatsapp}
+                      </button>
+                      {hasShop && (
+                        <DoodleButton
+                          type="button"
+                          onClick={handleViewShop}
+                          className="flex h-[46px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-green-1 text-[16px] font-medium text-white"
+                        >
+                          <Image src={viewShopIcon} alt="view-shop-icon" className="h-5 w-5 shrink-0" />
+                          {placeholders.view_shop}
+                        </DoodleButton>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {!isOwner && (
+                  <button
+                    type="button"
+                    onClick={onReportClick}
+                    className="mt-3 flex h-[42px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#E5E5E5] text-[14px] font-medium text-[#4B514F] hover:border-red-1 hover:text-red-1"
+                  >
+                    <Flag className="h-4 w-4 shrink-0" strokeWidth={2} />
+                    {placeholders["report" as keyof typeof placeholders] ?? "Report"}
+                  </button>
+                )}
+                {showShopActions && <div className="mt-2 flex items-center justify-center gap-2">
+                  <Image
+                    src={verifiedBlackIcon}
+                    alt=""
+                    aria-hidden
+                    className="h-[18px] w-[18px] shrink-0"
+                  />
+                  <p className="text-[14px] font-normal text-[#4B514F]">
+                    {placeholders.secure_transactions}
+                  </p>
+                </div>}
 
                 <div className="space-y-2 sm:space-y-2 sm:flex sm:flex-wrap sm:justify-between items-center">
 
@@ -769,91 +820,6 @@ function BuyProductDetail({
                       </div>
                     ),
                   )}
-                {mounted && showPurchaseActions && (
-                  <button
-                    type="button"
-                    disabled={
-                      Object.keys(selectedVariants).length !==
-                      product?.data?.parameters?.length
-                    }
-                    onClick={handleAddToCart}
-                    className="mt-8 flex h-[46px] w-full cursor-pointer items-center justify-center rounded-xl border border-green-1 bg-white text-[16px] font-medium text-green-1 hover:bg-green-1 hover:text-white disabled:pointer-events-none disabled:opacity-50"
-                  >
-                    {placeholders.add_cart}
-                  </button>
-                )}
-                {mounted && showPurchaseActions && (
-                  <DoodleButton
-                    type="button"
-                    disabled={
-                      Object.keys(selectedVariants).length !==
-                      product?.data?.parameters?.length
-                    }
-                    onClick={() => requireSignIn(() => setStep?.("cart"))}
-                    className="mt-4 flex h-[46px] w-full cursor-pointer items-center justify-center rounded-xl border border-green-1 bg-green-1 text-[16px] font-medium text-white hover:bg-white hover:text-green-1 disabled:pointer-events-none disabled:opacity-50"
-                  >
-                    {placeholders.buy_now}
-                  </DoodleButton>
-                )}
-                {/* {mounted && showWhatsAppContact && (
-                  <button
-                    type="button"
-                    onClick={handleWhatsAppContact}
-                    className="mt-8 flex h-[46px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#25D366] bg-[#25D366] text-[16px] font-medium text-white hover:bg-[#1ebe57]"
-                  >
-                    <WhatsAppIcon className="h-5 w-5 shrink-0" />
-                    {placeholders.contact_seller_on_whatsapp}
-                  </button>
-                )} */}
-
-                {showShopActions && (
-                  <div className="mt-8 space-y-3">
-                    <DoodleButton
-                      type="button"
-                      disabled={isLoading}
-                      onClick={handleChatStore}
-                      className="flex h-[46px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-green-1 text-[16px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-70"
-                    >
-                      {isLoading ? (
-                        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                      ) : (
-                        <ChatStoreIcon className="h-5 w-5 shrink-0" />
-                      )}
-                      {hasShop ? placeholders.chat_store : placeholders.message_seller}
-                    </DoodleButton>
-                    <div className="flex gap-3">
-                      <button
-                        type="button"
-                        onClick={handleWhatsAppContact}
-                        className={`flex h-[46px] cursor-pointer items-center justify-center gap-2 rounded-xl border border-green-1 bg-white text-[16px] font-medium text-green-1 ${hasShop ? "flex-1" : "w-full"}`}
-                      >
-                        <WhatsAppIcon className="h-5 w-5 shrink-0 text-[#25D366]" />
-                        {placeholders.whatsapp}
-                      </button>
-                      {hasShop && (
-                        <DoodleButton
-                          type="button"
-                          onClick={handleViewShop}
-                          className="flex h-[46px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-green-1 text-[16px] font-medium text-white"
-                        >
-                          <Image src={viewShopIcon} alt="view-shop-icon" className="h-5 w-5 shrink-0" />
-                          {placeholders.view_shop}
-                        </DoodleButton>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {showShopActions && <div className="mt-2 flex items-center justify-center gap-2">
-                  <Image
-                    src={verifiedBlackIcon}
-                    alt=""
-                    aria-hidden
-                    className="h-[18px] w-[18px] shrink-0"
-                  />
-                  <p className="text-[14px] font-normal text-[#4B514F]">
-                    {placeholders.secure_transactions}
-                  </p>
-                </div>}
                 <div className="mt-8 border-t border-[#E5E5E5] pt-6">
                   <h4 className="text-[15px] font-medium text-[#030303]">
                     {placeholders.seller_information}
