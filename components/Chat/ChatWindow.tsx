@@ -433,10 +433,14 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
   }, [broadcastThreadId, thread?.offer?._id, thread?.offer?.status]);
 
   const handleSubmitOffer = useCallback(async () => {
-    const priceNum = Number(offerPrice);
-    if (!Number.isFinite(priceNum) || priceNum <= 0) {
-      toast.error(String(error_messages.price_required ?? "Price is required"));
-      return;
+    const trimmedPrice = offerPrice.trim();
+    let priceNum: number | undefined;
+    if (trimmedPrice) {
+      priceNum = Number(trimmedPrice);
+      if (!Number.isFinite(priceNum) || priceNum <= 0) {
+        toast.error(String(error_messages.price_required ?? "Price is required"));
+        return;
+      }
     }
     if (!offerMessageText.trim()) {
       toast.error(String(error_messages.message_required ?? "Message is required"));
@@ -861,9 +865,11 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
               </p>
             ) : (
               <div className="text-left">
-                <p className="mb-1 text-[16px] font-medium text-green-1">
-                  {placeholders.Rs} {formatPrice(localOffer?.price)}
-                </p>
+                {localOffer?.price != null && (
+                  <p className="mb-1 text-[16px] font-medium text-green-1">
+                    {placeholders.Rs} {formatPrice(localOffer.price)}
+                  </p>
+                )}
                 <p className="mb-4 whitespace-pre-wrap text-[14px] text-[#030303]">
                   {localOffer?.message}
                 </p>

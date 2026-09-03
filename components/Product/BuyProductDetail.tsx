@@ -326,7 +326,7 @@ function BuyProductDetail({
     requireSignIn(() => setOfferModal(true));
   };
 
-  const handleSubmitOffer = async (payload: { price: number; message: string }) => {
+  const handleSubmitOffer = async (payload: { price?: number; message: string }) => {
     if (!productId) return;
     try {
       await submitProductOffer({

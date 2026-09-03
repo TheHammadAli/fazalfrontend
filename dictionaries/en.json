@@ -333,7 +333,7 @@
         "offer_type_broadcast": "Broadcast",
         "offer_type_product": "Product",
         "broadcast_offer_intro": "Send an offer to start chatting with this broadcast's owner.",
-        "your_offer_price": "Your offer price",
+        "your_offer_price": "Your offer price (optional)",
         "offer_message_placeholder": "Write your offer message...",
         "submit_offer": "Send Offer",
         "offer_pending_notice": "Offer sent — waiting for a response",

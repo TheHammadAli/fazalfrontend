@@ -54,7 +54,7 @@ type OfferedProductItem = {
 
 type BroadcastOfferItem = {
   _id: string;
-  price: number;
+  price?: number | null;
   message: string;
   status: "pending" | "accepted" | "declined";
   thread: string;
@@ -64,7 +64,7 @@ type BroadcastOfferItem = {
 
 type ProductOfferItem = {
   _id: string;
-  price: number;
+  price?: number | null;
   message: string;
   status: "pending" | "accepted" | "declined";
   createdAt: string;
@@ -191,9 +191,11 @@ function ReceivedBroadcastPanel({
                     />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[14px] font-medium text-black-1">{offer.offerer?.name}</p>
-                      <p className="text-[15px] font-medium text-green-1">
-                        {ph("Rs")} {formatPrice(offer.price)}
-                      </p>
+                      {offer.price != null && (
+                        <p className="text-[15px] font-medium text-green-1">
+                          {ph("Rs")} {formatPrice(offer.price)}
+                        </p>
+                      )}
                     </div>
                     <StatusBadge status={offer.status} ph={ph} />
                   </div>
@@ -385,9 +387,11 @@ function ReceivedProductPanel({
                     />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[14px] font-medium text-black-1">{offer.offerer?.name}</p>
-                      <p className="text-[15px] font-medium text-green-1">
-                        {ph("Rs")} {formatPrice(offer.price)}
-                      </p>
+                      {offer.price != null && (
+                        <p className="text-[15px] font-medium text-green-1">
+                          {ph("Rs")} {formatPrice(offer.price)}
+                        </p>
+                      )}
                     </div>
                     <StatusBadge status={offer.status} ph={ph} />
                   </div>
@@ -515,7 +519,7 @@ type SentOfferItem = {
   kind: "broadcast" | "product";
   title: string;
   message: string;
-  price: number;
+  price?: number | null;
   status: "pending" | "accepted" | "declined";
   createdAt: string;
   image?: string;
@@ -618,9 +622,11 @@ function SentOffersPanel() {
               <StatusBadge status={item.status} ph={ph} />
             </div>
             <p className="mt-2 truncate text-[15px] font-medium text-black-1">{item.title}</p>
-            <p className="mt-0.5 text-[14px] font-medium text-green-1">
-              {ph("Rs")} {formatPrice(item.price)}
-            </p>
+            {item.price != null && (
+              <p className="mt-0.5 text-[14px] font-medium text-green-1">
+                {ph("Rs")} {formatPrice(item.price)}
+              </p>
+            )}
             {item.message ? (
               <p className="mt-1 whitespace-pre-wrap text-[13px] text-black-1">{item.message}</p>
             ) : null}

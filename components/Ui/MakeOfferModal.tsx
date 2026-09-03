@@ -14,7 +14,7 @@ export type MakeOfferModalProps = {
   productImage?: string;
   productTitle: string;
   productPrice: string | number;
-  onSubmit: (payload: { price: number; message: string }) => void | Promise<void>;
+  onSubmit: (payload: { price?: number; message: string }) => void | Promise<void>;
   loading?: boolean;
 };
 
@@ -33,8 +33,10 @@ function MakeOfferModal({
   const [price, setPrice] = useState("");
   const [message, setMessage] = useState("");
 
-  const priceNum = Number(price);
-  const isValid = Number.isFinite(priceNum) && priceNum > 0 && message.trim().length > 0;
+  const trimmedPrice = price.trim();
+  const priceNum = trimmedPrice ? Number(trimmedPrice) : undefined;
+  const priceValid = priceNum === undefined || (Number.isFinite(priceNum) && priceNum > 0);
+  const isValid = priceValid && message.trim().length > 0;
 
   const handleClose = () => setOpen(false);
 

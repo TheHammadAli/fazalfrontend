@@ -330,7 +330,7 @@
         "offer_type_broadcast": "براڈکاسٹ",
         "offer_type_product": "پروڈکٹ",
         "broadcast_offer_intro": "اس براڈکاسٹ کے مالک سے چیٹ شروع کرنے کے لیے آفر بھیجیں۔",
-        "your_offer_price": "آپ کی آفر قیمت",
+        "your_offer_price": "آپ کی آفر قیمت (اختیاری)",
         "offer_message_placeholder": "اپنی آفر کا پیغام لکھیں...",
         "submit_offer": "آفر بھیجیں",
         "offer_pending_notice": "آفر بھیج دی گئی — جواب کا انتظار ہے",

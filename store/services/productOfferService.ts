@@ -3,7 +3,7 @@ import { baseApi } from "../baseApi";
 export const productOfferService = baseApi.injectEndpoints({
   endpoints: (build) => ({
     submitProductOffer: build.mutation({
-      query: (body: { productId: string; price: number; message: string }) => ({
+      query: (body: { productId: string; price?: number; message: string }) => ({
         url: `/products/offers`,
         method: "POST",
         body,
