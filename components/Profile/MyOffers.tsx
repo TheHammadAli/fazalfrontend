@@ -403,7 +403,7 @@ function ReceivedProductPanel({
                     <div className="mt-3 flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => offer.offerer?._id && onInitiateChat(userId, offer.offerer._id)}
+                        onClick={() => offer.offerer?._id && onInitiateChat(offer.offerer._id, userId)}
                         className="flex-1 h-[38px] rounded-[6px] border border-gray-9 text-black-1 text-[14px] font-normal cursor-pointer flex items-center justify-center"
                       >
                         {ph("message")}
@@ -436,7 +436,7 @@ function ReceivedProductPanel({
                   ) : offer.status === "accepted" ? (
                     <button
                       type="button"
-                      onClick={() => offer.offerer?._id && onInitiateChat(userId, offer.offerer._id)}
+                      onClick={() => offer.offerer?._id && onInitiateChat(offer.offerer._id, userId)}
                       className="mt-3 cursor-pointer text-[14px] font-medium text-green-1 hover:underline"
                     >
                       {ph("message")}
