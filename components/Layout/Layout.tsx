@@ -230,22 +230,21 @@ function Layout({ children }: { children: React.ReactNode }) {
     };
 
     const onReceiveMessage = (data: unknown) => {
-      if (!isFromCurrentUser(data, userId)) {
+      const payload = (data && typeof data === "object" ? data : {}) as Record<string, any>;
+      // Offer accept/decline messages arrive marked silent — the "notification"
+      // event for that same offer response already showed a toast for it.
+      if (!isFromCurrentUser(data, userId) && !payload.silent) {
         playNotificationSound("REST");
-        if (data && typeof data === "object") {
-          const payload = data as Record<string, any>;
-          const { name } = getSenderMeta(payload);
-          showDesktopOsNotification({
-            title: placeholders.new_notification,
-            body: `${placeholders.new_message_from} ${name}`,
-            icon: inAppChatIcon.src as string,
-            tag: "chat-message",
-            onClick: () => {
-              router.push(`/chat?chatId=${payload?.message?.conversationId}`)
-              console.log(payload, "payload")
-            }
-          });
-        }
+        const { name } = getSenderMeta(payload);
+        showDesktopOsNotification({
+          title: placeholders.new_notification,
+          body: `${placeholders.new_message_from} ${name}`,
+          icon: inAppChatIcon.src as string,
+          tag: "chat-message",
+          onClick: () => {
+            router.push(`/chat?chatId=${payload?.message?.conversationId}`)
+          }
+        });
       }
       dispatch(baseApi.util.invalidateTags(["Chat"]));
     };

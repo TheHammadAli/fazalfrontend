@@ -14,20 +14,12 @@ firebase.initializeApp({
   appId: "1:1042475957024:web:3d474c24c131f62b40f545",
 });
 
-const messaging = firebase.messaging();
-
-messaging.onBackgroundMessage((payload) => {
-  const notification = payload.notification || {};
-  const title = notification.title || "Fazl";
-
-  self.registration.showNotification(title, {
-    body: notification.body || "",
-    icon: notification.icon || "/favicon.ico",
-    tag: "app-push-notification",
-    renotify: true,
-    data: payload.data || {},
-  });
-});
+// Messages carry a `notification` payload (see firebase.service.ts), so the
+// browser auto-displays them in the background on its own — no
+// onBackgroundMessage handler needed here. Registering one anyway and calling
+// showNotification() from it double-shows every push, since both the
+// browser's built-in handling and the manual call fire for the same message.
+firebase.messaging();
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
