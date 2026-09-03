@@ -5,6 +5,7 @@ import chevron from "@/assets/icons/chev-down-icon.svg";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
 import noImageAvtar from "@/assets/images/no-image-av.png";
 import { useClickOutside } from "@/custom-hooks/useClickOutside";
+import { formatPrice } from "@/utils/formatPrice";
 import { useDeleteServiceMutation } from "@/store/services/sellingService";
 import threeDots from "@/assets/icons/three-dots.svg";
 import { useRouter } from "next/navigation";
@@ -245,7 +246,7 @@ function ServiceDetail({ serviceData }: { serviceData: ServiceDetailType }) {
                     {serviceData?.title ?? ""}
                   </h3>
                   <div className="mt-2 text-[28px] font-medium text-[#3C9197]">
-                    {placeholders.Rs} {serviceData?.price ?? ""}
+                    {placeholders.Rs} {formatPrice(serviceData?.price)}
                     {paymentTypeLabel ? `/${paymentTypeLabel}` : ""}
                   </div>
                 </div>

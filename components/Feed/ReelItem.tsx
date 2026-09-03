@@ -16,6 +16,7 @@ import { getUserId } from "@/utils/getUserId";
 import shareSimpleIcon from "@/assets/icons/share-white-icon.svg";
 import DoodleButton from "@/components/Ui/DoodleButton";
 import { useRequireSignIn } from "@/custom-hooks/useRequireSignIn";
+import { formatPrice } from "@/utils/formatPrice";
 export default function ReelItem({
     type,
     item,
@@ -262,7 +263,7 @@ export default function ReelItem({
                         </div>
                     </div>
                     <h3 className="text-[16px] font-medium mt-2 ">{item.title}</h3>
-                    <p className="mt-1 text-[#00D656] font-semibold">Rs {item.price}</p>
+                    <p className="mt-1 text-[#00D656] font-semibold">Rs {formatPrice(item.price)}</p>
 
                     <DoodleButton
                         type="button"

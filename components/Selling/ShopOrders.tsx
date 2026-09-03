@@ -16,6 +16,7 @@ import { useClickOutside } from "@/custom-hooks/useClickOutside";
 import { toast } from "react-hot-toast";
 import { BeatLoader } from "react-spinners";
 import DoodleButton from "@/components/Ui/DoodleButton";
+import { formatPrice } from "@/utils/formatPrice";
 
 const PAGE_LIMIT = 15;
 
@@ -405,7 +406,7 @@ function ShopOrders() {
                               {order?.product?.title ?? ""}
                             </h3>
                             <p className="text-[14px] font-medium text-green-1">
-                              {placeholders.Rs} {order?.product?.price ?? ""}
+                              {placeholders.Rs} {formatPrice(order?.product?.price)}
                             </p>
                             <p
                               className={`text-[14px] font-normal ${getOrderStatusColorClass(order?.status)}`}

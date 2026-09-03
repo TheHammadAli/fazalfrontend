@@ -7,6 +7,7 @@ import noImageAvtar from "@/assets/images/no-image-av.png";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
 import { BeatLoader } from "react-spinners";
 import DoodleButton from "@/components/Ui/DoodleButton";
+import { formatPrice } from "@/utils/formatPrice";
 
 export type MakeOfferModalProps = {
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -75,7 +76,7 @@ function MakeOfferModal({
           <div className="min-w-0">
             <p className="truncate text-[15px] font-medium text-[#0F172A]">{productTitle}</p>
             <p className="text-[14px] font-medium text-green-1">
-              {ph("Rs")} {productPrice}
+              {ph("Rs")} {formatPrice(productPrice)}
             </p>
           </div>
         </div>

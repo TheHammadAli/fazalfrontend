@@ -8,6 +8,7 @@ import noImageAvtar from "@/assets/images/no-image-av.png";
 import defaultProfileAvatar from "@/assets/images/default-profile-avatar.svg";
 import useInitiateChat from "@/custom-hooks/useInitiateChat";
 import { getUserId } from "@/utils/getUserId";
+import { formatPrice } from "@/utils/formatPrice";
 import Reviews from "../Ui/Reviews";
 import { useGetAvgReviewsQuery } from "@/store/services/reviewService";
 import { useGetProductOwnerDetailQuery } from "@/store/services/authService";
@@ -685,7 +686,7 @@ function BuyProductDetail({
                   {product?.data?.title ?? ""}
                 </h3>
                 <div className="text-[#3C9197] text-[28px] font-medium mt-2 ">
-                  {placeholders.Rs} {product?.data?.price ?? ""}
+                  {placeholders.Rs} {formatPrice(product?.data?.price)}
                 </div>
 
                 {mounted && showPurchaseActions && (
@@ -717,39 +718,39 @@ function BuyProductDetail({
 
                 {showShopActions && (
                   <div className="mt-8 space-y-3">
-                    <DoodleButton
-                      type="button"
-                      disabled={isLoading}
-                      onClick={handleChatStore}
-                      className="flex h-[46px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-green-1 text-[16px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-70"
-                    >
-                      {isLoading ? (
-                        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                      ) : (
-                        <ChatStoreIcon className="h-5 w-5 shrink-0" />
-                      )}
-                      {hasShop ? placeholders.chat_store : placeholders.message_seller}
-                    </DoodleButton>
                     <div className="flex gap-3">
+                      <DoodleButton
+                        type="button"
+                        disabled={isLoading}
+                        onClick={handleChatStore}
+                        className="flex h-[46px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-green-1 text-[16px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-70"
+                      >
+                        {isLoading ? (
+                          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                        ) : (
+                          <ChatStoreIcon className="h-5 w-5 shrink-0" />
+                        )}
+                        {hasShop ? placeholders.chat_store : placeholders.message_seller}
+                      </DoodleButton>
                       <button
                         type="button"
                         onClick={handleWhatsAppContact}
-                        className={`flex h-[46px] cursor-pointer items-center justify-center gap-2 rounded-xl border border-green-1 bg-white text-[16px] font-medium text-green-1 ${hasShop ? "flex-1" : "w-full"}`}
+                        className="flex h-[46px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-green-1 bg-white text-[16px] font-medium text-green-1"
                       >
                         <WhatsAppIcon className="h-5 w-5 shrink-0 text-[#25D366]" />
                         {placeholders.whatsapp}
                       </button>
-                      {hasShop && (
-                        <DoodleButton
-                          type="button"
-                          onClick={handleViewShop}
-                          className="flex h-[46px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-green-1 text-[16px] font-medium text-white"
-                        >
-                          <Image src={viewShopIcon} alt="view-shop-icon" className="h-5 w-5 shrink-0" />
-                          {placeholders.view_shop}
-                        </DoodleButton>
-                      )}
                     </div>
+                    {hasShop && (
+                      <DoodleButton
+                        type="button"
+                        onClick={handleViewShop}
+                        className="flex h-[46px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-green-1 text-[16px] font-medium text-white"
+                      >
+                        <Image src={viewShopIcon} alt="view-shop-icon" className="h-5 w-5 shrink-0" />
+                        {placeholders.view_shop}
+                      </DoodleButton>
+                    )}
                   </div>
                 )}
                 {!isOwner && (

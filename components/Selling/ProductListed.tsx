@@ -6,6 +6,7 @@ import tickIcon from "@/assets/icons/tick-circle.svg";
 import listAnotherImage from "@/assets/icons/list-another-icon.svg";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
 import noImageAvtar from "@/assets/images/no-image-av.png";
+import { formatPrice } from "@/utils/formatPrice";
 
 interface Props {
   setStatus: (val: string) => void;
@@ -28,7 +29,7 @@ function ProductListed({ setStatus, createdData }: Props) {
   const productTitle = createdData?.title || "";
   const productPrice =
     createdData?.price != null && createdData.price !== ""
-      ? `Rs ${createdData.price}`
+      ? `Rs ${formatPrice(createdData.price)}`
       : "";
 
   return (

@@ -12,6 +12,7 @@ import AvatarUi from "@/components/Ui/AvatarUi";
 import { BeatLoader } from "react-spinners";
 import toast from "react-hot-toast";
 import formatFromNowShort from "@/utils/formatFromNowShort";
+import { formatPrice } from "@/utils/formatPrice";
 import { getUserId } from "@/utils/getUserId";
 import useInitiateChat from "@/custom-hooks/useInitiateChat";
 import {
@@ -191,7 +192,7 @@ function ReceivedBroadcastPanel({
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[14px] font-medium text-black-1">{offer.offerer?.name}</p>
                       <p className="text-[15px] font-medium text-green-1">
-                        {ph("Rs")} {offer.price}
+                        {ph("Rs")} {formatPrice(offer.price)}
                       </p>
                     </div>
                     <StatusBadge status={offer.status} ph={ph} />
@@ -385,7 +386,7 @@ function ReceivedProductPanel({
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[14px] font-medium text-black-1">{offer.offerer?.name}</p>
                       <p className="text-[15px] font-medium text-green-1">
-                        {ph("Rs")} {offer.price}
+                        {ph("Rs")} {formatPrice(offer.price)}
                       </p>
                     </div>
                     <StatusBadge status={offer.status} ph={ph} />
@@ -396,6 +397,13 @@ function ReceivedProductPanel({
                   </p>
                   {offer.status === "pending" ? (
                     <div className="mt-3 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => offer.offerer?._id && onInitiateChat(userId, offer.offerer._id)}
+                        className="flex-1 h-[38px] rounded-[6px] border border-gray-9 text-black-1 text-[14px] font-normal cursor-pointer flex items-center justify-center"
+                      >
+                        {ph("message")}
+                      </button>
                       <DoodleButton
                         type="button"
                         disabled={Boolean(respondingOfferId)}
@@ -478,7 +486,7 @@ function ReceivedProductPanel({
                   {ph("offers_count").replace("{count}", String(item.offerCount))}
                 </span>
               </div>
-              <p className="mt-0.5 text-[13px] font-medium text-green-1">{item.product?.price ? `${ph("Rs")} ${item.product.price}` : ""}</p>
+              <p className="mt-0.5 text-[13px] font-medium text-green-1">{item.product?.price ? `${ph("Rs")} ${formatPrice(item.product.price)}` : ""}</p>
               <p className="mt-0.5 text-[12px] text-gray-8">
                 {formatFromNowShort(item.latestOfferAt, currentLanguage as "en" | "ur")}
               </p>
@@ -611,7 +619,7 @@ function SentOffersPanel() {
             </div>
             <p className="mt-2 truncate text-[15px] font-medium text-black-1">{item.title}</p>
             <p className="mt-0.5 text-[14px] font-medium text-green-1">
-              {ph("Rs")} {item.price}
+              {ph("Rs")} {formatPrice(item.price)}
             </p>
             {item.message ? (
               <p className="mt-1 whitespace-pre-wrap text-[13px] text-black-1">{item.message}</p>

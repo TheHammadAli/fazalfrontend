@@ -8,6 +8,7 @@ import { useSearchParams } from "next/navigation";
 import noImageAvtar from "@/assets/images/no-image-av.png";
 import defaultProfileAvatar from "@/assets/images/default-profile-avatar.svg";
 import { useClickOutside } from "@/custom-hooks/useClickOutside";
+import { formatPrice } from "@/utils/formatPrice";
 import { useDeleteProductMutation } from "@/store/services/sellingService";
 import threeDots from "@/assets/icons/three-dots.svg";
 import { useRouter } from "next/navigation";
@@ -258,7 +259,7 @@ function ProductDetail() {
                     {product?.data?.title ?? ""}
                   </h3>
                   <div className="mt-2 text-[28px] font-medium text-[#3C9197]">
-                    {placeholders.Rs} {product?.data?.price ?? ""}
+                    {placeholders.Rs} {formatPrice(product?.data?.price)}
                   </div>
                 </div>
                 <div className="relative cursor-pointer" ref={ref}>

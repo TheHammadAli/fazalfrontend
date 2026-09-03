@@ -4,6 +4,7 @@ import tickIcon from "@/assets/icons/tick-circle.svg";
 import listAnotherImage from "@/assets/icons/list-another-icon.svg";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
 import noImageAvtar from "@/assets/images/no-image-av.png";
+import { formatPrice } from "@/utils/formatPrice";
 
 interface Props {
   createData?:any
@@ -20,7 +21,7 @@ function ServiceCreated({ createData }: Props) {
   const serviceTitle = service?.title || "";
   const servicePrice =
     service?.price != null && service.price !== ""
-      ? `Rs ${service.price}`
+      ? `Rs ${formatPrice(service.price)}`
       : "";
 
   return (

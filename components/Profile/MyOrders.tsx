@@ -13,6 +13,7 @@ import {
   useUpdateOrderStatusMutation,
 } from "@/store/services/sellingService";
 import { getUserId } from "@/utils/getUserId";
+import { formatPrice } from "@/utils/formatPrice";
 import Tabs from "../Ui/Tabs";
 import { parsePositiveInt } from "../Updates/Notifications";
 import { useRouter } from "next/navigation";
@@ -456,7 +457,7 @@ function MyOrders() {
                                 {order?.product?.title ?? ""}
                               </h3>
                               <p className="text-[14px] font-medium text-green-1">
-                                {placeholders.Rs} {order?.product?.price ?? ""}
+                                {placeholders.Rs} {formatPrice(order?.product?.price)}
                               </p>
                               <p className={`text-[14px] font-normal ${getOrderStatusColorClass(order?.status)}`}>
                                 {
@@ -513,7 +514,7 @@ function MyOrders() {
                                   {order?.product?.title ?? ""}
                                 </h3>
                                 <p className="text-[14px] font-medium text-green-1">
-                                  {placeholders.Rs} {order?.product?.price ?? ""}
+                                  {placeholders.Rs} {formatPrice(order?.product?.price)}
                                 </p>
                                 <p
                                   className={`text-[14px] font-normal ${getOrderStatusColorClass(order?.status)}`}

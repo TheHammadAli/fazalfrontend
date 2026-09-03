@@ -8,6 +8,7 @@ import { FreeMode } from "swiper/modules";
 import noImageAvtar from "@/assets/images/no-image-av.png";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
 import { useGetShopProductsQuery } from "@/store/services/sellingService";
+import { formatPrice } from "@/utils/formatPrice";
 import "swiper/css";
 
 const SWIPE_CLICK_SUPPRESS_MS = 120;
@@ -204,7 +205,7 @@ export default function ShopProductsSlider({
                       </div>
                       <div className="p-2">
                         <h2 className="text-[16px] font-normal text-green-1">
-                          {placeholders.Rs} {item.price}
+                          {placeholders.Rs} {formatPrice(item.price)}
                         </h2>
                         <h2 className="line-clamp-1 text-[16px] font-medium text-black-1 transition-colors first-letter:capitalize group-hover:text-green-1">
                           {item.title}

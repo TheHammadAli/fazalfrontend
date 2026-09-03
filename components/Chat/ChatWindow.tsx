@@ -9,6 +9,7 @@ import whiteArrowIcon from "@/assets/icons/white-arrow.svg";
 import { getUserId } from "@/utils/getUserId";
 import { usePresence } from "@/custom-hooks/usePresence";
 import formatLastSeen from "@/utils/formatLastSeen";
+import { formatPrice } from "@/utils/formatPrice";
 import { useGetBroadcastThreadMessagesQuery, useGetConversationMessagesQuery, useMarkBroadcastMessagesAsReadMutation, useMarkMessagesAsReadMutation, useSendBroadcastMessageMutation, useSendMessageMutation } from "@/store/services/chatService";
 import { useSubmitBroadcastOfferMutation, useAcceptBroadcastOfferMutation, useDeclineBroadcastOfferMutation } from "@/store/services/broadcastOfferService";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -861,7 +862,7 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
             ) : (
               <div className="text-left">
                 <p className="mb-1 text-[16px] font-medium text-green-1">
-                  {placeholders.Rs} {localOffer?.price}
+                  {placeholders.Rs} {formatPrice(localOffer?.price)}
                 </p>
                 <p className="mb-4 whitespace-pre-wrap text-[14px] text-[#030303]">
                   {localOffer?.message}

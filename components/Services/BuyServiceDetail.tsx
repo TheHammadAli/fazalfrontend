@@ -7,6 +7,7 @@ import { useDictionary } from "@/dictionaries/DictionaryProvider";
 import noImageAvtar from "@/assets/images/no-image-av.png";
 import defaultProfileAvatar from "@/assets/images/default-profile-avatar.svg";
 import { getUserId } from "@/utils/getUserId";
+import { formatPrice } from "@/utils/formatPrice";
 import useInitiateChat from "@/custom-hooks/useInitiateChat";
 import Reviews from "../Ui/Reviews";
 import { useGetAvgReviewsQuery } from "@/store/services/reviewService";
@@ -477,7 +478,7 @@ function BuyServiceDetail({
                 {service?.data?.title ?? ""}
               </h3>
               {service?.data?.price && Number(service?.data?.price) > 0 ? <div className="mt-2 text-[28px] font-medium text-[#3C9197]">
-                {placeholders.Rs} {service?.data?.price ?? ""}
+                {placeholders.Rs} {formatPrice(service?.data?.price)}
                 {paymentTypeLabel ? `/${paymentTypeLabel}` : ""}
               </div> : <div className="mt-2 text-[28px] font-medium text-[#3C9197]">{placeholders.call_for_price}</div>}
 

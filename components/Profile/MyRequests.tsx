@@ -12,6 +12,7 @@ import {
 import { getUserId } from "@/utils/getUserId";
 import noImageAvtar from "@/assets/images/no-image-av.png";
 import { formatRequestedDateTime } from "@/utils/formatRequestedDateTime";
+import { formatPrice } from "@/utils/formatPrice";
 import ServiceRequestSkeleton from "@/components/Services/ServiceRequestSkeleton";
 import { BeatLoader } from "react-spinners";
 import toast from "react-hot-toast";
@@ -351,7 +352,7 @@ function MyRequests() {
                     const providerId =
                       item.provider?.id ?? item.provider?._id ?? "";
                     const priceLabel = item.service?.price
-                      ? `${item.service.price}/${item.service.paymentType === "hourly" ? ph("fixed") : ph("fixed")}`
+                      ? `${formatPrice(item.service.price)}/${item.service.paymentType === "hourly" ? ph("fixed") : ph("fixed")}`
                       : "";
                     const offerExpired =
                       activeFilter === "new_offer" && isNewOfferExpired(item);

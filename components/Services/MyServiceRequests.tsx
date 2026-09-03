@@ -6,6 +6,7 @@ import { getCookie } from "cookies-next";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
 import { useGetServicesRequestsQuery } from "@/store/services/sellingService";
 import { formatRequestedDateTime } from "@/utils/formatRequestedDateTime";
+import { formatPrice } from "@/utils/formatPrice";
 import noImageAvtar from "@/assets/images/no-image-av.png";
 import ServiceRequestSkeleton from "./ServiceRequestSkeleton";
 
@@ -125,7 +126,7 @@ function MyServiceRequests() {
                     {ph("from_label")}: {request?.customer?.name}
                   </p>
                   <p className="mt-1 break-words text-[14px] font-medium leading-snug text-green-2">
-                    {request?.service?.price}/{ph("fixed")}
+                    {formatPrice(request?.service?.price)}/{ph("fixed")}
                   </p>
                 </div>
               </div>

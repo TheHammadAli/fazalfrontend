@@ -8,11 +8,10 @@ import crossIcon from "@/assets/icons/cross-icon.svg";
 import { BeatLoader } from "react-spinners";
 import toast from "react-hot-toast";
 import Modal from "@/components/Ui/Modals/Modal";
-import ReportModal, { type ReportReason } from "@/components/Ui/ReportModal";
+import { type ReportReason } from "@/components/Ui/ReportModal";
 import DoodleButton from "@/components/Ui/DoodleButton";
 import {
   useGetMyReportsQuery,
-  useUpdateReportMutation,
   useDeleteReportMutation,
 } from "@/store/services/reportsService";
 
@@ -56,7 +55,6 @@ function MyReports() {
   const reports = (data as MyReportsResponse | undefined)?.data?.reports ?? [];
   const loading = isLoading || isFetching;
 
-  const [updateReport, { isLoading: isUpdating }] = useUpdateReportMutation();
   const [deleteReport, { isLoading: isDeleting }] = useDeleteReportMutation();
 
   const [viewingReportId, setViewingReportId] = useState<string | null>(null);
@@ -69,32 +67,9 @@ function MyReports() {
     if (!nextOpen) setViewingReportId(null);
   }
 
-  const [editingReport, setEditingReport] = useState<ApiReport | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const editModalRef = useRef<HTMLDivElement>(null);
-
   const [deletingReportId, setDeletingReportId] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const deleteModalRef = useRef<HTMLDivElement>(null);
-
-  function openEditModal(report: ApiReport) {
-    setViewingReportId(null);
-    setEditingReport(report);
-    setIsEditModalOpen(true);
-  }
-
-  async function handleUpdateReport(payload: { reason: ReportReason; details: string }) {
-    if (!editingReport) return;
-    try {
-      await updateReport({ id: editingReport._id, ...payload }).unwrap();
-      toast.success(placeholders.report_updated_success);
-      setIsEditModalOpen(false);
-      setEditingReport(null);
-    } catch (err) {
-      const errorData = err as { data?: { message?: string } };
-      toast.error(errorData?.data?.message ?? error_messages.something_went_wrong);
-    }
-  }
 
   function openDeleteModal(reportId: string) {
     setViewingReportId(null);
@@ -232,7 +207,7 @@ function MyReports() {
             </div>
 
             {viewingReport.status === "open" && (
-              <div className="flex flex-col-reverse gap-3 border-t border-[#E3EDF3] px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+              <div className="flex border-t border-[#E3EDF3] px-5 py-4 sm:justify-end sm:px-6">
                 <button
                   type="button"
                   onClick={() => openDeleteModal(viewingReport._id)}
@@ -240,27 +215,9 @@ function MyReports() {
                 >
                   {ph("delete")}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => openEditModal(viewingReport)}
-                  className="h-[42px] cursor-pointer rounded-[8px] border border-green-1 bg-green-1 text-[14px] font-medium text-white sm:min-w-[100px]"
-                >
-                  {ph("edit")}
-                </button>
               </div>
             )}
           </div>
-        )}
-      </Modal>
-
-      <Modal editModalRef={editModalRef} open={isEditModalOpen} setOpen={setIsEditModalOpen} centered>
-        {editingReport && (
-          <ReportModal
-            setOpen={setIsEditModalOpen}
-            onSubmit={handleUpdateReport}
-            loading={isUpdating}
-            initialValues={{ reason: editingReport.reason, details: editingReport.details }}
-          />
         )}
       </Modal>
 

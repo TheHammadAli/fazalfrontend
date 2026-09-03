@@ -201,6 +201,9 @@ function Layout({ children }: { children: React.ReactNode }) {
       // Chat's own "receiveMessage" handler (below) already plays a sound and
       // shows a desktop alert for new messages — skip here to avoid firing both.
       if (data?.type === "MESSAGE") return;
+      // Same for broadcast messages: "receiveBroadcastMessage" (below) already
+      // shows its own desktop alert — skip here to avoid a second, duplicate toast.
+      if (data?.type === "BROADCAST") return;
 
       if (data?.type === "SERVICE_REQUEST") {
         playNotificationSound(data?.type as string);
@@ -253,9 +256,14 @@ function Layout({ children }: { children: React.ReactNode }) {
         if (data && typeof data === "object") {
           const payload = data as Record<string, unknown>;
           const { name, image } = getSenderMeta(payload);
+          // `payload.message` is the full BroadcastMessage document (not a
+          // string), so getPreviewText's plain `data.message` check always
+          // misses it — read the document's own `.message` text field instead.
+          const messageDoc = payload.message as Record<string, unknown> | undefined;
+          const text = typeof messageDoc?.message === "string" ? messageDoc.message : "";
           showDesktopOsNotification({
             title: name || placeholders.chat_title,
-            body: getPreviewText(payload) || placeholders.chat_title,
+            body: text || placeholders.chat_title,
             icon: image,
             tag: "broadcast-message",
           });

@@ -13,6 +13,7 @@ import addIcon from "@/assets/icons/add.svg";
 import noImageAvtar from "@/assets/images/no-image-av.png";
 import moment from "moment/min/moment-with-locales";
 import { useRequireSignIn } from "@/custom-hooks/useRequireSignIn";
+import { formatPrice } from "@/utils/formatPrice";
 
 function ServiceCart({
   service,
@@ -209,7 +210,7 @@ function ServiceCart({
                   <span>
                     {isCallForPrice
                       ? placeholders.call_for_price
-                      : `${placeholders.Rs} ${service?.data?.price}`}
+                      : `${placeholders.Rs} ${formatPrice(service?.data?.price)}`}
                   </span>
                 </div>
 
@@ -226,7 +227,7 @@ function ServiceCart({
                 <div className="flex justify-between font-medium text-[15px] mt-3">
                   <span>{placeholders.total_pay}</span>
                   <span>
-                    {placeholders.Rs} {totalAmount}
+                    {placeholders.Rs} {formatPrice(totalAmount)}
                   </span>
                 </div>
               )}

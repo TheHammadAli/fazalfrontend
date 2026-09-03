@@ -11,6 +11,7 @@ import ProductSkeleton from "./ProductsSkelton";
 import { useRouter } from "next/navigation";
 import { getUserId } from "@/utils/getUserId";
 import { AvgRatingStars } from "../Ui/Reviews";
+import { formatPrice } from "@/utils/formatPrice";
 
 function resolveEntityId(value: unknown): string | null {
   if (!value) return null;
@@ -114,7 +115,7 @@ function ShopProductsList() {
                   </span>
                 </div> */}
                 <h2 className="text-green-1 font-normal text-[16px]  ">
-                  {placeholders.Rs} {product?.price}
+                  {placeholders.Rs} {formatPrice(product?.price)}
                 </h2>
               </div>
             );

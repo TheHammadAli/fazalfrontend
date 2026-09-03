@@ -10,6 +10,7 @@ import chevronLeft from "@/assets/icons/chevron-right-icon.svg";
 import { useRouter } from "next/navigation";
 import { parsePositiveInt } from "../Updates/Notifications";
 import { useInView } from "react-intersection-observer";
+import { formatPrice } from "@/utils/formatPrice";
 
 const PAGE_LIMIT = 10;
 
@@ -188,7 +189,7 @@ function BookedServices() {
                                                 {request?.service?.title}
                                             </h3>
                                             <p className="text-[14px] font-medium leading-snug mt-1 text-green-2 break-words">
-                                                {placeholders.Rs} {request?.service?.price}/
+                                                {placeholders.Rs} {formatPrice(request?.service?.price)}/
                                                 {request?.service?.paymentType === "hourly"
                                                     ? ph("fixed")
                                                     : ph("fixed")}

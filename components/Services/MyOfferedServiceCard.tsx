@@ -8,6 +8,7 @@ import {
   getFeedCategoryIcon,
   getFeedCategoryLabel,
 } from "@/utils/getFeedCategoryLabel";
+import { formatPrice } from "@/utils/formatPrice";
 import CategoryImg from "@/assets/icons/category-icon.png";
 import penIcon from "@/assets/icons/pen-icon.svg";
 import shareNewIcon from "@/assets/icons/share-new-icon.svg";
@@ -115,7 +116,7 @@ function MyOfferedServiceCard({ serviceData }: Props) {
                 {placeholders.starting_from ?? "Starting from"}
               </p>
               {serviceData?.price ? <p className="text-[18px] font-semibold text-green-1">
-                {placeholders.Rs} {serviceData?.price ?? ""}
+                {placeholders.Rs} {formatPrice(serviceData?.price)}
               </p> : <p className="text-[18px] font-semibold text-green-1">{placeholders.call_for_price}</p>}
             </div>
           </div>

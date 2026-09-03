@@ -11,6 +11,7 @@ import React, {
 import { BeatLoader } from "react-spinners";
 import DoodleButton from "@/components/Ui/DoodleButton";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
+import { formatPrice } from "@/utils/formatPrice";
 import { getCookie } from "cookies-next";
 import { useRouter } from "next/navigation";
 import {
@@ -705,7 +706,7 @@ function OfferedServices() {
                                                             {ph("from_label")}: {request?.customer?.name}
                                                         </p>
                                                         <p className="text-[14px] font-medium leading-snug mt-1 text-green-2 break-words">
-                                                            {request?.service?.price}/
+                                                            {formatPrice(request?.service?.price)}/
                                                             {request?.service?.paymentType === "hourly"
                                                                 ? ph("fixed")
                                                                 : ph("fixed")}
