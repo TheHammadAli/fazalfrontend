@@ -19,11 +19,19 @@ export const chatService = baseApi.injectEndpoints({
       providesTags: ["Chat"],
     }),
     initiateChat: build.mutation({
-      query: ({ buyerId, sellerId }: { buyerId: string; sellerId: string }) => {
+      query: ({
+        buyerId,
+        sellerId,
+        productId,
+      }: {
+        buyerId: string;
+        sellerId: string;
+        productId?: string;
+      }) => {
         return {
           url: `/chat/conversation`,
           method: "POST",
-          body: { buyerId, sellerId },
+          body: { buyerId, sellerId, productId },
         };
       },
       invalidatesTags: ["Chat"],
