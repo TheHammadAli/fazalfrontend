@@ -436,10 +436,7 @@ function ReceivedProductPanel({
                   ) : offer.status === "accepted" || offer.status === "declined" ? (
                     <button
                       type="button"
-                      onClick={() =>
-                        offer.offerer?._id &&
-                        onInitiateChat(offer.offerer._id, userId, undefined, selected?.productId)
-                      }
+                      onClick={() => offer.offerer?._id && onInitiateChat(offer.offerer._id, userId)}
                       className="mt-3 cursor-pointer text-[14px] font-medium text-green-1 hover:underline"
                     >
                       {ph("message")}
@@ -573,7 +570,7 @@ function SentOffersPanel() {
     image: offer.product?.images?.[0],
     navigate: () => {
       if ((offer.status === "accepted" || offer.status === "declined") && offer.seller?._id) {
-        onInitiateChat(userId, offer.seller._id, undefined, offer.product?._id);
+        onInitiateChat(userId, offer.seller._id);
       } else if (offer.product?._id) {
         router.push(`/buy-product?id=${offer.product._id}`);
       }

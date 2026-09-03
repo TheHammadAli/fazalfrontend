@@ -10,10 +10,9 @@ const useInitiateChat = () => {
     buyerId: string,
     sellerId: string,
     initialMessage?: string,
-    productId?: string,
   ) => {
     try {
-      const result = await initiateChat({ buyerId, sellerId, productId }).unwrap();
+      const result = await initiateChat({ buyerId, sellerId }).unwrap();
       const conversationId = result?.data?._id ?? result?.data?.id;
       const params = new URLSearchParams();
       if (conversationId) params.set("chatId", String(conversationId));
