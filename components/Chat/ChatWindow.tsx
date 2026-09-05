@@ -950,14 +950,14 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
                         ) : null}
                         {messageTime ? (
                           <div
-                            className={`flex items-center justify-end gap-1 ${showText || hasImages || hasAudio ? "px-3 pb-1.5 pt-0.5" : "px-3 py-1"}`}
+                            className={`flex items-center justify-end gap-0.5 ${showText || hasImages || hasAudio ? "px-3 pb-1.5 pt-0.5" : "px-3 py-1"}`}
                           >
                             <span className="select-none text-[11px] leading-none text-[#667781]">
                               {messageTime}
                             </span>
                             {showTicks ? (
                               <span
-                                className={`select-none text-[13px] leading-none ${isReadTick ? "text-[#53BDEB]" : "text-[#667781]"}`}
+                                className={`select-none text-[11px] leading-none tracking-[-1.5px] ${isReadTick ? "text-[#53BDEB]" : "text-[#667781]"}`}
                               >
                                 {tickMark}
                               </span>
