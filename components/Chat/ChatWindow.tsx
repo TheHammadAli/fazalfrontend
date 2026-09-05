@@ -727,10 +727,28 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
     const onReceiveBroadcastMessage = () => {
       dispatch(baseApi.util.invalidateTags(["BROADCAST"]));
     };
+    const applyStatus = (
+      payload: { conversationId?: string; messageIds?: string[] },
+      status: "delivered" | "read",
+    ) => {
+      const ids = new Set(payload?.messageIds ?? []);
+      if (ids.size === 0) return;
+      setFilteredMessages((prev) =>
+        prev.map((m: any) => (ids.has(m?._id ?? m?.id) ? { ...m, status } : m)),
+      );
+    };
+    const onMessagesDelivered = (payload: { conversationId?: string; messageIds?: string[] }) =>
+      applyStatus(payload, "delivered");
+    const onMessagesRead = (payload: { conversationId?: string; messageIds?: string[] }) =>
+      applyStatus(payload, "read");
     chatSocket?.on("receiveMessage", onReceiveMessage);
+    chatSocket?.on("messagesDelivered", onMessagesDelivered);
+    chatSocket?.on("messagesRead", onMessagesRead);
     broadcastSocket?.on("receiveBroadcastMessage", onReceiveBroadcastMessage);
     return () => {
       chatSocket?.off("receiveMessage", onReceiveMessage);
+      chatSocket?.off("messagesDelivered", onMessagesDelivered);
+      chatSocket?.off("messagesRead", onMessagesRead);
       broadcastSocket?.off("receiveBroadcastMessage", onReceiveBroadcastMessage);
     };
   }, [dispatch]);
@@ -813,7 +831,11 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
               const showDateSeparator = currentDateLabel && currentDateLabel !== previousDateLabel;
               const MAX_CHAT_IMAGES = 5;
               const textContent =
-                threadType === "broadcast_messages" ? message?.message : message?.text;
+                threadType === "broadcast_messages"
+                  ? message?.message
+                  : mine && message?.senderText
+                    ? message.senderText
+                    : message?.text;
               const allImageUrls = getMessageImageUrls(message).slice(0, MAX_CHAT_IMAGES);
               const imageCount = allImageUrls.length;
               const hasFiveImages = imageCount === 5;
@@ -823,6 +845,9 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
               const audioUrl: string | undefined = message?.audioUrl;
               const hasAudio = Boolean(audioUrl);
               const messageTime = getMessageTime(message.createdAt);
+              const showTicks = mine && threadType === "direct_messages";
+              const isReadTick = message?.status === "read";
+              const tickMark = message?.status === "delivered" || message?.status === "read" ? "✓✓" : "✓";
               return (
                 <div key={index}>
                   {showDateSeparator ? (
@@ -925,11 +950,18 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
                         ) : null}
                         {messageTime ? (
                           <div
-                            className={`flex justify-end ${showText || hasImages || hasAudio ? "px-3 pb-1.5 pt-0.5" : "px-3 py-1"}`}
+                            className={`flex items-center justify-end gap-1 ${showText || hasImages || hasAudio ? "px-3 pb-1.5 pt-0.5" : "px-3 py-1"}`}
                           >
                             <span className="select-none text-[11px] leading-none text-[#667781]">
                               {messageTime}
                             </span>
+                            {showTicks ? (
+                              <span
+                                className={`select-none text-[13px] leading-none ${isReadTick ? "text-[#53BDEB]" : "text-[#667781]"}`}
+                              >
+                                {tickMark}
+                              </span>
+                            ) : null}
                           </div>
                         ) : null}
                       </div>

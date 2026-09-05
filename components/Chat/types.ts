@@ -36,4 +36,8 @@ export type ChatMessage = {
   sender: string;
   mine: boolean;
   message?: string;
+  senderText?: string;
+  status?: "sent" | "delivered" | "read";
+  deliveredAt?: string;
+  readAt?: string;
 };
