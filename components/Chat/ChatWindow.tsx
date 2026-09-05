@@ -19,7 +19,8 @@ import moment from "moment";
 import { initializeSocket } from "@/utils/socket";
 import baseApi from "@/store/baseApi";
 import { useAppDispatch } from "@/store/store";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, MicrophoneIcon, TrashIcon, StopIcon } from "@heroicons/react/24/outline";
+import VoiceMessageBubble from "./VoiceMessageBubble";
 import noImageAvtar from "@/assets/images/default-profile-avatar.svg";
 import chatDoodleBackground from "@/assets/images/chat-doodle-bg.jpg";
 import noMessagesIcon from "@/assets/icons/no-message.svg";
@@ -33,6 +34,21 @@ type ChatWindowProps = {
   threadType: string;
   draftMessage?: string;
 };
+
+const MAX_RECORDING_SECONDS = 180;
+
+function formatClockTime(totalSeconds: number): string {
+  const seconds = Math.max(0, Math.floor(totalSeconds));
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${String(secs).padStart(2, "0")}`;
+}
+
+function extensionForMimeType(mimeType: string): string {
+  if (mimeType.includes("mp4")) return "m4a";
+  if (mimeType.includes("webm")) return "webm";
+  return "ogg";
+}
 
 function getMessageImageUrls(message: {
   imageUrl?: unknown;
@@ -148,6 +164,14 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
   const [filteredMessages, setFilteredMessages] = useState<ChatMessage[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [recordingState, setRecordingState] = useState<"idle" | "recording" | "preview">("idle");
+  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
+  const [recordedSeconds, setRecordedSeconds] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recordingStartRef = useRef(0);
   const [imageLightboxOpen, setImageLightboxOpen] = useState(false);
   const [imageLightboxIndex, setImageLightboxIndex] = useState(0);
   const [imageLightboxSlides, setImageLightboxSlides] = useState<{ src: string }[]>([]);
@@ -276,6 +300,102 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
     };
   }, [attachmentPreviewUrl]);
 
+  const recordedPreviewUrl = useMemo(
+    () => (recordedBlob ? URL.createObjectURL(recordedBlob) : null),
+    [recordedBlob],
+  );
+
+  useEffect(() => {
+    if (!recordedPreviewUrl) return;
+    return () => {
+      URL.revokeObjectURL(recordedPreviewUrl);
+    };
+  }, [recordedPreviewUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        mediaRecorderRef.current.onstop = null;
+        mediaRecorderRef.current.stream.getTracks().forEach((t) => t.stop());
+        mediaRecorderRef.current.stop();
+      }
+    };
+  }, []);
+
+  const clearRecordingTimer = useCallback(() => {
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+  }, []);
+
+  const stopRecording = useCallback(() => {
+    mediaRecorderRef.current?.stop();
+  }, []);
+
+  const startRecording = useCallback(async () => {
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+      toast.error("Voice messages aren't supported in this browser");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const candidateTypes = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
+      const mimeType = candidateTypes.find((t) => MediaRecorder.isTypeSupported(t));
+      if (!mimeType) {
+        stream.getTracks().forEach((t) => t.stop());
+        toast.error("Voice messages aren't supported in this browser");
+        return;
+      }
+
+      const recorder = new MediaRecorder(stream, { mimeType });
+      recordedChunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) recordedChunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        clearRecordingTimer();
+        const blob = new Blob(recordedChunksRef.current, { type: mimeType });
+        setRecordedBlob(blob);
+        setRecordedSeconds(Math.round((Date.now() - recordingStartRef.current) / 1000));
+        setRecordingState("preview");
+      };
+
+      recordingStartRef.current = Date.now();
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setElapsedSeconds(0);
+      setRecordingState("recording");
+      recordingTimerRef.current = setInterval(() => {
+        const elapsed = Math.round((Date.now() - recordingStartRef.current) / 1000);
+        setElapsedSeconds(elapsed);
+        if (elapsed >= MAX_RECORDING_SECONDS) {
+          stopRecording();
+        }
+      }, 250);
+    } catch {
+      toast.error("Microphone access was denied");
+    }
+  }, [clearRecordingTimer, stopRecording]);
+
+  const cancelRecording = useCallback(() => {
+    clearRecordingTimer();
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      // Discard: swap onstop for a no-op stream-cleanup before stopping.
+      mediaRecorderRef.current.onstop = () => {
+        mediaRecorderRef.current?.stream.getTracks().forEach((t) => t.stop());
+      };
+      mediaRecorderRef.current.stop();
+    }
+    mediaRecorderRef.current = null;
+    setRecordedBlob(null);
+    setRecordedSeconds(0);
+    setElapsedSeconds(0);
+    setRecordingState("idle");
+  }, [clearRecordingTimer]);
+
   const openMessageImageLightbox = useCallback((urls: string[], startIndex: number) => {
     if (!urls.length) return;
     setImageLightboxSlides(urls.map((src) => ({ src })));
@@ -284,9 +404,16 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
   }, []);
 
   const handleSendMessage = useCallback(async () => {
-    if (messageText.trim() === "" && !selectedFile) {
+    if (messageText.trim() === "" && !selectedFile && !recordedBlob) {
       return;
     }
+    const voiceFile = recordedBlob
+      ? new File(
+          [recordedBlob],
+          `voice-${Date.now()}.${extensionForMimeType(recordedBlob.type)}`,
+          { type: recordedBlob.type },
+        )
+      : null;
     try {
 
       if (threadType === "broadcast_messages") {
@@ -311,7 +438,7 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
           message: messageText.trim(),
         };
         const body =
-          selectedFile
+          selectedFile || voiceFile
             ? (() => {
               const formData = new FormData();
               Object.entries(messageData).forEach(([key, value]) => {
@@ -319,7 +446,11 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
                   formData.append(key, String(value));
                 }
               });
-              formData.append("file", selectedFile);
+              if (selectedFile) formData.append("file", selectedFile);
+              if (voiceFile) {
+                formData.append("voice", voiceFile);
+                formData.append("duration", String(recordedSeconds));
+              }
               return formData;
             })()
             : messageData;
@@ -332,6 +463,9 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
           .then(() => {
             setMessageText("");
             setSelectedFile(null);
+            setRecordedBlob(null);
+            setRecordedSeconds(0);
+            setRecordingState("idle");
             if (fileInputRef.current) {
               fileInputRef.current.value = "";
             }
@@ -367,16 +501,17 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
         receiverId,
       };
       const singleFile = selectedFile;
-      const messageWithFile = {
-        ...messageData,
-        file: singleFile,
-      };
       const formData = new FormData();
-      Object.entries(messageWithFile).forEach(([key, value]) => {
+      Object.entries(messageData).forEach(([key, value]) => {
         if (value) {
-          formData.append(key, value instanceof File ? value : String(value));
+          formData.append(key, String(value));
         }
       });
+      if (singleFile) formData.append("file", singleFile);
+      if (voiceFile) {
+        formData.append("voice", voiceFile);
+        formData.append("duration", String(recordedSeconds));
+      }
       try {
         const socket = initializeSocket("chat");
         if (!socket) {
@@ -384,9 +519,12 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
           return;
         }
         // socket.emit('sendMessage', selectedFile ? formData : messageData);
-        await sendMessage(singleFile ? formData : messageData).unwrap();
+        await sendMessage(singleFile || voiceFile ? formData : messageData).unwrap();
         setMessageText("");
         setSelectedFile(null);
+        setRecordedBlob(null);
+        setRecordedSeconds(0);
+        setRecordingState("idle");
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
         }
@@ -410,6 +548,8 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
   }, [
     messageText,
     selectedFile,
+    recordedBlob,
+    recordedSeconds,
     threadType,
     isBroadcastReceived,
     thread,
@@ -680,6 +820,8 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
               const imageUrls = hasFiveImages ? allImageUrls.slice(0, 4) : allImageUrls;
               const hasImages = imageUrls.length > 0;
               const showText = Boolean(textContent != null && String(textContent).trim());
+              const audioUrl: string | undefined = message?.audioUrl;
+              const hasAudio = Boolean(audioUrl);
               const messageTime = getMessageTime(message.createdAt);
               return (
                 <div key={index}>
@@ -694,10 +836,17 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
                         className="h-8 w-8 rounded-full bg-[#e7f4f5] !text-green-1"
                       />
                     ) : null}
-                    {(hasImages || showText) ? (
+                    {(hasImages || showText || hasAudio) ? (
                       <div
                         className={`w-fit max-w-[85%] overflow-hidden rounded-xl lg:max-w-[60%] ${mine ? "bg-[#EAF1FB]" : "bg-[#DFF4F4]"}`}
                       >
+                        {hasAudio ? (
+                          <VoiceMessageBubble
+                            src={audioUrl as string}
+                            duration={message?.audioDuration}
+                            className="min-w-[180px] px-3 pt-2.5"
+                          />
+                        ) : null}
                         {hasImages ? (
                           <div
                             className={
@@ -776,7 +925,7 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
                         ) : null}
                         {messageTime ? (
                           <div
-                            className={`flex justify-end ${showText || hasImages ? "px-3 pb-1.5 pt-0.5" : "px-3 py-1"}`}
+                            className={`flex justify-end ${showText || hasImages || hasAudio ? "px-3 pb-1.5 pt-0.5" : "px-3 py-1"}`}
                           >
                             <span className="select-none text-[11px] leading-none text-[#667781]">
                               {messageTime}
@@ -936,45 +1085,100 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
           accept="image/*"
           className="hidden"
         />
-        <div className=" mt-3 flex items-center gap-2">
-          <label htmlFor="file-input" className="cursor-pointer rounded-md p-1 text-gray-500">
-            <Image src={camIcon} alt="cam-icon" />
-          </label>
-          <div className="relative w-full">
-            <textarea
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              onKeyDown={(e) => {
-                if (
-                  e.key === "Enter" &&
-                  !e.shiftKey &&
-                  !isSendingMessage &&
-                  !isSendingBroadcastMessage
-                ) {
-                  e.preventDefault();
-                  handleSendMessage();
-                }
-              }}
-              placeholder={ph("write_a_message")}
-              rows={Math.min(4, Math.max(1, messageText.split("\n").length))}
-              className="max-h-[120px] min-h-10 w-full resize-none rounded-[10px] bg-[#EEF2F3] px-4 py-2.5 pr-10 text-sm text-[#030303] outline-none placeholder:text-[#949494] rtl:pl-10"
-            />
-            <div className="absolute ltr:right-3 rtl:left-3 rtl:rotate-180 bottom-2.5 p-1 hover:bg-green-1/10 rounded-full">
+        {recordingState === "recording" ? (
+          <div className="mt-3 flex items-center gap-3 rounded-[10px] bg-[#EEF2F3] px-4 py-2.5">
+            <span className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-red-500" />
+            <span className="flex-1 text-sm text-[#030303]">{formatClockTime(elapsedSeconds)}</span>
+            <button
+              type="button"
+              onClick={cancelRecording}
+              aria-label="Cancel recording"
+              className="cursor-pointer rounded-full p-1 text-gray-500 hover:bg-black/5"
+            >
+              <TrashIcon className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={stopRecording}
+              aria-label="Stop recording"
+              className="cursor-pointer rounded-full bg-green-1 p-1.5 text-white hover:opacity-90"
+            >
+              <StopIcon className="h-4 w-4" />
+            </button>
+          </div>
+        ) : recordingState === "preview" ? (
+          <div className="mt-3 flex items-center gap-3 rounded-[10px] bg-[#EEF2F3] px-4 py-2.5">
+            {recordedPreviewUrl ? (
+              <VoiceMessageBubble src={recordedPreviewUrl} duration={recordedSeconds} className="flex-1" />
+            ) : null}
+            <button
+              type="button"
+              onClick={cancelRecording}
+              aria-label="Discard recording"
+              className="cursor-pointer rounded-full p-1 text-gray-500 hover:bg-black/5"
+            >
+              <TrashIcon className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              disabled={isSendingMessage || isSendingBroadcastMessage}
+              onClick={() => handleSendMessage()}
+              aria-label="Send voice message"
+              className="cursor-pointer rounded-full bg-green-1 p-1.5 text-white hover:opacity-90 disabled:opacity-50"
+            >
               {isSendingMessage || isSendingBroadcastMessage ? (
-                <span className="">
-                  <span className="block h-4 w-4 animate-spin rounded-full border-2 border-[#3C9197] border-t-transparent" />
-                </span>
+                <span className="block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
               ) : (
-                <Image
-                  onClick={() => handleSendMessage()}
-                  src={whiteArrowIcon}
-                  alt="white-arrow-icon"
-                  className="cursor-pointer"
-                />
+                <Image src={whiteArrowIcon} alt="send" className="h-4 w-4" />
               )}
+            </button>
+          </div>
+        ) : (
+          <div className=" mt-3 flex items-center gap-2">
+            <label htmlFor="file-input" className="cursor-pointer rounded-md p-1 text-gray-500">
+              <Image src={camIcon} alt="cam-icon" />
+            </label>
+            <div className="relative w-full">
+              <textarea
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (
+                    e.key === "Enter" &&
+                    !e.shiftKey &&
+                    !isSendingMessage &&
+                    !isSendingBroadcastMessage
+                  ) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
+                placeholder={ph("write_a_message")}
+                rows={Math.min(4, Math.max(1, messageText.split("\n").length))}
+                className="max-h-[120px] min-h-10 w-full resize-none rounded-[10px] bg-[#EEF2F3] px-4 py-2.5 pr-10 text-sm text-[#030303] outline-none placeholder:text-[#949494] rtl:pl-10"
+              />
+              <div className="absolute ltr:right-3 rtl:left-3 rtl:rotate-180 bottom-2.5 p-1 hover:bg-green-1/10 rounded-full">
+                {isSendingMessage || isSendingBroadcastMessage ? (
+                  <span className="">
+                    <span className="block h-4 w-4 animate-spin rounded-full border-2 border-[#3C9197] border-t-transparent" />
+                  </span>
+                ) : messageText.trim() === "" && !selectedFile ? (
+                  <MicrophoneIcon
+                    onClick={() => startRecording()}
+                    className="h-5 w-5 cursor-pointer text-gray-500"
+                  />
+                ) : (
+                  <Image
+                    onClick={() => handleSendMessage()}
+                    src={whiteArrowIcon}
+                    alt="white-arrow-icon"
+                    className="cursor-pointer"
+                  />
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
       ) : null}
 
