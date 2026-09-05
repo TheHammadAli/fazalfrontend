@@ -362,7 +362,7 @@ export default function ShopDetail() {
                 </div> */}
 
                 {isShopOwner ? (
-                  <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
                     <DoodleButton
                       onClick={() =>
                         router.push(`/selling/list-product?id=${shop?.data?.id}`)
