@@ -46,6 +46,19 @@ export default function ReelItem({
     const [likesCount, setLikesCount] = useState(item.likesCount ?? 0);
     const [sharesCount, setSharesCount] = useState(item.sharesCount ?? 0);
     const feedType = type === "products" ? "product" : "service";
+    // A video-only shop post isn't a real sellable product — send viewers to the
+    // shop instead of a product detail page that has no real price/category.
+    const isShopVideoPost = type === "products" && !!item.isVideoPost && !!item.shopId;
+    const ctaLabel = isShopVideoPost ? ph("visit_shop") : type === "products" ? ph("shop_now") : ph("book_now");
+    const goToCta = () => {
+        if (isShopVideoPost) {
+            router.push(`/selling/shop-detail?id=${item.shopId}`);
+        } else if (type === "products") {
+            router.push(`/buy-product?id=${item.id}`);
+        } else if (type === "services") {
+            router.push(`/book-service?id=${item.id}`);
+        }
+    };
     const { ref, inView } = useInView({
         threshold: 0.7, // 
     });
@@ -271,29 +284,21 @@ export default function ReelItem({
                         type="button"
                         onClick={(e) => {
                             e.stopPropagation();
-                            if (type === "products") {
-                                router.push(`/buy-product?id=${item.id}`);
-                            } else if (type === "services") {
-                                router.push(`/book-service?id=${item.id}`);
-                            }
+                            goToCta();
                         }}
                         className="mt-2 flex h-[46px] w-full cursor-pointer items-center justify-center rounded-md bg-green-1 px-4 text-white"
                     >
-                        {type === "products" ? ph("shop_now") : ph("book_now")}
+                        {ctaLabel}
                     </DoodleButton>
                 </div>
                 <div className=" flex flex-col items-center gap-4">
                     <button
                         type="button"
-                        aria-label={type === "products" ? ph("shop_now") : ph("book_now")}
+                        aria-label={ctaLabel}
                         className="flex h-[54px] w-[54px] shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-white bg-[#2C2C2C]/80"
                         onClick={(e) => {
                             e.stopPropagation();
-                            if (type === "products") {
-                                router.push(`/buy-product?id=${item.id}`);
-                            } else if (type === "services") {
-                                router.push(`/book-service?id=${item.id}`);
-                            }
+                            goToCta();
                         }}
                     >
                         <User className="h-7 w-7 text-green-1" strokeWidth={1.75} aria-hidden />

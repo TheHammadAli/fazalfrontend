@@ -19,6 +19,7 @@ type ProductFeedItem = {
     category?: ReelItem["category"];
     likesCount?: number;
     sharesCount?: number;
+    isVideoPost?: boolean;
 };
 
 type FeedResponseMeta = {
@@ -62,6 +63,7 @@ function ProductFeeds() {
                             : undefined,
                         likesCount: product.likesCount ?? 0,
                         sharesCount: product.sharesCount ?? 0,
+                        isVideoPost: !!product.isVideoPost,
                     };
                 }) ?? [];
 

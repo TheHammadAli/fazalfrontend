@@ -15,6 +15,7 @@ export type ReelItem = {
     category: ReelCategory;
     likesCount?: number;
     sharesCount?: number;
+    isVideoPost?: boolean;
 };
 
 type ReelsFeedProps = {
