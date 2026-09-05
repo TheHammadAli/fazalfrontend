@@ -2,6 +2,7 @@
     "currentLanguage": "ur",
     "placeholders": {
         "new_message_from": "نیا پیغام از",
+        "voice_message": "صوتی پیغام",
         "no_locations_found": "کوئی مقام نہیں ملا",
         "you_offered_a_new_time": "آپ نے نیا وقت پیش کیا",
         "hour": "ساعت",

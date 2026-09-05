@@ -16,6 +16,7 @@ import noImageAvtar from "@/assets/images/default-profile-avatar.svg";
 import AvatarUi from '../Ui/AvatarUi';
 import { useMemo } from 'react';
 import { usePresence, type PresenceMap } from '@/custom-hooks/usePresence';
+import { MicrophoneIcon } from '@heroicons/react/24/solid';
 function DirectMessages({
     threadType,
     setThreadType,
@@ -186,7 +187,14 @@ function DirectMessages({
                                         <span className="shrink-0 text-[13px] font-normal text-[#4B514F]">{moment(thread?.lastMessageAt).locale(currentLanguage).fromNow()}</span>
                                     </div>
                                     <div className="mt-1 flex items-center justify-between gap-2">
-                                        <p className="truncate text-sm text-gray-600">{thread.latestMessage?.text ?? ""}</p>
+                                        {thread.latestMessage?.audioUrl ? (
+                                            <p className="flex min-w-0 items-center gap-1 truncate text-sm text-gray-600">
+                                                <MicrophoneIcon className="h-3.5 w-3.5 shrink-0" />
+                                                <span className="truncate">{ph("voice_message")}</span>
+                                            </p>
+                                        ) : (
+                                            <p className="truncate text-sm text-gray-600">{thread.latestMessage?.text ?? ""}</p>
+                                        )}
                                         {unreadCount > 0 ? (
                                             <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[#3C9197] px-1.5 text-[11px] font-medium leading-none text-white">
                                                 {unreadCount > 99 ? "99+" : unreadCount}
