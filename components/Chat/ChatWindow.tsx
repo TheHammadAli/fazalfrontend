@@ -753,7 +753,8 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
                             className={`break-words text-sm leading-relaxed ${mine ? "text-[#030303]" : "text-gray-900"} ${hasImages ? "px-3 pt-2" : "px-4 pt-2.5"} whitespace-pre-wrap`}
                           >
                             {String(textContent)
-                              .split(/(https?:\/\/[^\s]+)/g)
+                              .split(/(https?:\/\/[^\s]+|\*\*[^*]+\*\*)/g)
+                              .filter((part) => part !== "")
                               .map((part, partIndex) =>
                                 /^https?:\/\//.test(part) ? (
                                   <a
@@ -765,6 +766,8 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
                                   >
                                     {part}
                                   </a>
+                                ) : /^\*\*[^*]+\*\*$/.test(part) ? (
+                                  <strong key={`bold-${partIndex}`}>{part.slice(2, -2)}</strong>
                                 ) : (
                                   <span key={`text-${partIndex}`}>{part}</span>
                                 ),
