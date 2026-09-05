@@ -353,7 +353,7 @@ export default function ShopDetail() {
                 </div> */}
 
                 {isShopOwner ? (
-                  <div className="mt-4 space-y-2">
+                  <div className="mt-4 flex flex-wrap gap-2">
                     <DoodleButton
                       onClick={() =>
                         router.push(`/selling/list-product?id=${shop?.data?.id}`)
@@ -362,9 +362,14 @@ export default function ShopDetail() {
                     >
                       {placeholders.list_product}
                     </DoodleButton>
-                    {/* <button className="w-full max-w-[400px] bg-white border-[1px] border-green-1 text-green-1 text-[16px] h-[46px] font-medium flex items-center justify-center rounded-xl cursor-pointer">
-                    {placeholders.promote_shop}
-                  </button> */}
+                    <DoodleButton
+                      onClick={() =>
+                        router.push(`/selling/post-video?id=${shop?.data?.id}`)
+                      }
+                      className="px-4 w-[180px] bg-white border-[1px] border-green-1 text-green-1 text-[14px] h-[40px] font-medium flex items-center justify-center rounded-xl cursor-pointer"
+                    >
+                      {placeholders.post_video}
+                    </DoodleButton>
                   </div>
                 ) : null}
               </div>

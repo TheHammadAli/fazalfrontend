@@ -263,7 +263,9 @@ export default function ReelItem({
                         </div>
                     </div>
                     <h3 className="text-[16px] font-medium mt-2 ">{item.title}</h3>
-                    <p className="mt-1 text-[#00D656] font-semibold">Rs {formatPrice(item.price)}</p>
+                    {item.price ? (
+                        <p className="mt-1 text-[#00D656] font-semibold">Rs {formatPrice(item.price)}</p>
+                    ) : null}
 
                     <DoodleButton
                         type="button"
