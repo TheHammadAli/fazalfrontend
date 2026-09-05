@@ -723,6 +723,12 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
     const broadcastSocket = initializeSocket("broadcast");
     const onReceiveMessage = () => {
       dispatch(baseApi.util.invalidateTags(["Chat"]));
+      // The conversation-open effect only marks read once, on open — a message
+      // arriving while this window is already open would otherwise sit at
+      // delivered forever until it's closed and reopened.
+      if (conversationId && userId && threadType === "direct_messages") {
+        markMessagesAsRead({ conversationId, userId }).unwrap().catch(() => {});
+      }
     };
     const onReceiveBroadcastMessage = () => {
       dispatch(baseApi.util.invalidateTags(["BROADCAST"]));
