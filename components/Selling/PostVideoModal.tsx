@@ -6,7 +6,7 @@ import ChooseVideoTab from "../Services/ChooseVideoTab";
 import DoodleButton from "@/components/Ui/DoodleButton";
 import { BeatLoader } from "react-spinners";
 import toast from "react-hot-toast";
-import { useListProductMutation } from "@/store/services/sellingService";
+import { usePostVideoMutation } from "@/store/services/sellingService";
 
 interface Props {
   open: boolean;
@@ -21,8 +21,8 @@ function PostVideoModal({ open, setOpen, shopId, onCreated }: Props) {
   const [video, setVideo] = useState<File | null | string>(null);
   const [caption, setCaption] = useState("");
   const [captionError, setCaptionError] = useState("");
-  const [listProduct, { isLoading, isSuccess, isError, data, error }] =
-    useListProductMutation();
+  const [postVideo, { isLoading, isSuccess, isError, data, error }] =
+    usePostVideoMutation();
 
   useEffect(() => {
     if (!open) {
@@ -62,11 +62,9 @@ function PostVideoModal({ open, setOpen, shopId, onCreated }: Props) {
 
     const formData = new FormData();
     formData.append("title", caption.trim());
-    formData.append("type", "retail");
-    formData.append("isVideoPost", "true");
     formData.append("video", video);
 
-    listProduct({ id: shopId, formData, type: "shop" });
+    postVideo({ shopId, formData });
   };
 
   return (

@@ -20,6 +20,7 @@ import noImageIcon from "@/assets/images/new-no-image-placeholder.png";
 import Modal from "../Ui/Modals/Modal";
 import SharePostModal from "../Ui/SharePostModal";
 import ReportModal, { type ReportReason } from "../Ui/ReportModal";
+import PostVideoModal from "./PostVideoModal";
 import { getUserId } from "@/utils/getUserId";
 import { useCreateReportMutation } from "@/store/services/reportsService";
 import { useRequireSignIn } from "@/custom-hooks/useRequireSignIn";
@@ -87,6 +88,7 @@ export default function ShopDetail() {
   const userId = getUserId() ?? "";
   const [shareModal, setShareModal] = useState(false);
   const [reportModal, setReportModal] = useState(false);
+  const [postVideoModal, setPostVideoModal] = useState(false);
   const [mounted, setMounted] = useState(false);
   const sharePostRef = useRef<HTMLDivElement>(null);
   const reportModalRef = useRef<HTMLDivElement>(null);
@@ -169,6 +171,13 @@ export default function ShopDetail() {
       >
         <ReportModal setOpen={setReportModal} onSubmit={handleSubmitReport} loading={isSubmittingReport} />
       </Modal>
+      {shop?.data?.id ? (
+        <PostVideoModal
+          open={postVideoModal}
+          setOpen={setPostVideoModal}
+          shopId={shop.data.id}
+        />
+      ) : null}
       <div className=" px-5 md:px-6 h-[61px] border-b-[1px] border-gray-9 bg-[white] hide-scrollbar w-full  flex justify-center ">
         <div className="w-full min-w-max hide-scrollbar overflow-scroll flex items-center gap-[6px] font-normal text-[14px] mt-5">
           <span className="text-gray-8">{pages.selling}</span>
@@ -363,9 +372,7 @@ export default function ShopDetail() {
                       {placeholders.list_product}
                     </DoodleButton>
                     <DoodleButton
-                      onClick={() =>
-                        router.push(`/selling/post-video?id=${shop?.data?.id}`)
-                      }
+                      onClick={() => setPostVideoModal(true)}
                       className="px-4 w-[180px] bg-white border-[1px] border-green-1 text-green-1 text-[14px] h-[40px] font-medium flex items-center justify-center rounded-xl cursor-pointer"
                     >
                       {placeholders.post_video}

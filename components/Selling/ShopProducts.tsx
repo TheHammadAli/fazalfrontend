@@ -4,10 +4,11 @@ import Tabs from "../Ui/Tabs";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
 import { useRouter, useSearchParams } from "next/navigation";
 import ShopProductsList from "./ShopProductsList";
+import ShopVideosList from "./ShopVideosList";
 
 
 function ShopProducts() {
-  const tabs = ["shop",
+  const tabs = ["shop", "my_videos",
     // "orders"
   ];
   const [activeTab, setActiveTab] = useState<string>(tabs[0]);
@@ -16,6 +17,7 @@ function ShopProducts() {
 
   const tabsComponents: { [key: string]: React.ReactNode } = {
     shop: <ShopProductsList />,
+    my_videos: <ShopVideosList />,
     // orders: <ShopOrders />,
   };
 

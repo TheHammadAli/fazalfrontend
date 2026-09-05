@@ -143,6 +143,30 @@ export const profileService = baseApi.injectEndpoints({
       invalidatesTags: ["PRODUCT"],
     }),
 
+    // A shop video post isn't a real product listing — its own routes, not /products.
+    postVideo: build.mutation({
+      query: ({ shopId, formData }) => ({
+        url: `/video-posts/${shopId}`,
+        method: "POST",
+        body: formData,
+      }),
+      invalidatesTags: ["PRODUCT"],
+    }),
+    getShopVideoPosts: build.query({
+      query: (shopId) => ({
+        url: `/video-posts/shop/${shopId}`,
+        method: "GET",
+      }),
+      providesTags: ["PRODUCT"],
+    }),
+    deleteVideoPost: build.mutation({
+      query: (id: string) => ({
+        url: `/video-posts/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["PRODUCT"],
+    }),
+
     orderProduct: build.mutation({
       query: (body) => ({
         url: "/orders",
@@ -366,6 +390,9 @@ export const {
   useOrderProductMutation,
   useGetShopProductsQuery,
   useListProductMutation,
+  usePostVideoMutation,
+  useGetShopVideoPostsQuery,
+  useDeleteVideoPostMutation,
   useGetShopDetailQuery,
   useTrackShopViewMutation,
   useTrackShopProductViewMutation,
