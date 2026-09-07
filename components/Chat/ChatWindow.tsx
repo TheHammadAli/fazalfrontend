@@ -76,6 +76,10 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const prevScrollHeightRef = useRef(0);
   const shouldStickToBottomRef = useRef(true);
+  // Tracks the conversation/thread the UI is currently displaying, so an
+  // in-flight query from a previous conversation can't paint stale messages
+  // into the new one.
+  const activeKeyRef = useRef<string>("");
   const userId = getUserId() ?? "";
 
   const getDateLabel = useCallback(
@@ -631,37 +635,55 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
     refetchBroadcastMessages();
   }, [threadType, broadcastRequestId, broadcastThreadId, refetchBroadcastMessages]);
 
+  const activeKey = useMemo(
+    () =>
+      threadType === "broadcast_messages"
+        ? `bcast:${broadcastRequestId}:${broadcastThreadId}`
+        : `conv:${conversationId}`,
+    [threadType, conversationId, broadcastRequestId, broadcastThreadId],
+  );
+
   useEffect(() => {
     if (threadType === "broadcast_messages") {
+      if (!broadcastRequestId || !broadcastThreadId) return;
+      if (activeKeyRef.current !== activeKey) return;
       const incomingBroadcastMessages = (broadcastMessages?.data as ChatMessage[] | undefined) ?? [];
       setFilteredMessages(incomingBroadcastMessages);
     }
-  }, [threadType, conversationId, broadcastMessages?.data]);
+  }, [threadType, activeKey, broadcastMessages?.data]);
 
   useEffect(() => {
     if (threadType === "direct_messages") {
       if (!incomingMessages) return;
+      if (activeKeyRef.current !== activeKey) return;
       if (page === 1) {
         setFilteredMessages(incomingMessages);
       } else {
-        setFilteredMessages((prev) => [...prev, ...incomingMessages]);
+        setFilteredMessages((prev) => {
+          // Guard against the initial late-arriving page=1 response of a
+          // freshly-opened conversation getting merged into another thread.
+          if (prev.length === 0) return incomingMessages;
+          return [...prev, ...incomingMessages];
+        });
       }
     }
-  }, [threadType, incomingMessages, page]);
+  }, [threadType, activeKey, incomingMessages, page]);
 
   useEffect(() => {
     const chatSocket = initializeSocket("chat");
     const broadcastSocket = initializeSocket("broadcast");
+    const previousKey = activeKeyRef.current;
+    const nextKey = activeKey;
+    activeKeyRef.current = nextKey;
     setPage(1);
     setSelectedFile(null);
     setMessageText(draftMessage.trim());
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
-    if (threadType === "broadcast_messages") {
-      const incomingBroadcastMessages = (broadcastMessages?.data as ChatMessage[] | undefined) ?? [];
-      setFilteredMessages(incomingBroadcastMessages);
-    } else {
+    // Only clear messages when the conversation actually changes, so the
+    // empty-state doesn't flash for the same conversation between renders.
+    if (previousKey !== nextKey) {
       setFilteredMessages([]);
     }
     shouldStickToBottomRef.current = true;
@@ -682,7 +704,7 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
         // Keep chat usable even if marking read fails.
       });
     }
-  }, [conversationId, markMessagesAsRead, userId, threadType, broadcastMessages?.data, broadcastThreadId, isBroadcastReceived, thread?._id, thread?.broadcastId, draftMessage]);
+  }, [activeKey, conversationId, markMessagesAsRead, userId, threadType, broadcastThreadId, isBroadcastReceived, thread?._id, thread?.broadcastId, draftMessage, broadcastRequestId, markBroadcastMessagesAsRead]);
 
   const sortedFilteredMessages = useMemo(
     () =>
@@ -722,7 +744,7 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
     const chatSocket = initializeSocket("chat");
     const broadcastSocket = initializeSocket("broadcast");
     const onReceiveMessage = () => {
-      dispatch(baseApi.util.invalidateTags(["Chat"]));
+      dispatch(baseApi.util.invalidateTags([{ type: "Chat", id: "LIST" }]));
       // The conversation-open effect only marks read once, on open — a message
       // arriving while this window is already open would otherwise sit at
       // delivered forever until it's closed and reopened.
@@ -831,7 +853,10 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
           :
           <div className="flex min-h-full flex-col justify-end gap-6">
             {sortedFilteredMessages?.map((message: any, index: number) => {
-              const mine = (threadType === "broadcast_messages" ? message?.sender?.id : message?.sender) === userId;
+              const senderId = threadType === "broadcast_messages"
+                ? message?.sender?.id ?? message?.sender?._id
+                : message?.senderId ?? message?.sender?.id ?? message?.sender?._id ?? message?.sender;
+              const mine = String(senderId ?? "") === userId;
               const currentDateLabel = getDateLabel(message.createdAt);
               const previousDateLabel = getDateLabel(sortedFilteredMessages[index - 1]?.createdAt);
               const showDateSeparator = currentDateLabel && currentDateLabel !== previousDateLabel;

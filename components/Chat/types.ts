@@ -34,6 +34,8 @@ export type ChatMessage = {
   sentAtLabel?: string;
   createdAt?: string;
   sender: string;
+  senderId?: string;
+  receiverId?: string;
   mine: boolean;
   message?: string;
   senderText?: string;

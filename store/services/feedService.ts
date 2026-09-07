@@ -13,6 +13,10 @@ export const feedService = baseApi.injectEndpoints({
           method: "GET",
         };
       },
+      // Shares the "PRODUCT" tag with the product list/detail queries, so any
+      // create/update/delete (which already invalidates "PRODUCT") refetches
+      // the feed automatically instead of needing a manual page refresh.
+      providesTags: ["PRODUCT"],
     }),
     getAllServicesFeed: build.query({
       query: ({ page, limit }: { page: number; limit: number }) => {
@@ -21,6 +25,9 @@ export const feedService = baseApi.injectEndpoints({
           method: "GET",
         };
       },
+      // Same as above: services mutations invalidate "SERVICES", so wiring the
+      // feed to provide it makes the feed refresh on its own.
+      providesTags: ["SERVICES"],
     }),
     likeVideo: build.mutation({
       query: (body: any) => {

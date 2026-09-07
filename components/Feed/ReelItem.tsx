@@ -50,6 +50,14 @@ export default function ReelItem({
     // shop instead of a product detail page that has no real price/category.
     const isShopVideoPost = type === "products" && !!item.isVideoPost && !!item.shopId;
     const ctaLabel = isShopVideoPost ? ph("visit_shop") : type === "products" ? ph("shop_now") : ph("book_now");
+    // A shop video post carries the internal "Video Post" sentinel category, which
+    // means nothing to a viewer — show which shop it came from instead.
+    const showShopAsChip = isShopVideoPost && !!item.shopName;
+    const chipLabel = showShopAsChip
+        ? item.shopName
+        : getFeedCategoryLabel(item.category, currentLanguage);
+    const chipIcon =
+        (showShopAsChip ? item.shopImage : getFeedCategoryIcon(item.category)) ?? noImageIcon;
     const goToCta = () => {
         if (isShopVideoPost) {
             router.push(`/selling/shop-detail?id=${item.shopId}`);
@@ -263,16 +271,18 @@ export default function ReelItem({
                     <div className="flex overflow-hidden   bg-[#4A4A4A3D] w-max rounded-md  border-[0.5px] border-[#74747480]">
                         <div className="flex items-center justify-center bg-[#505050C2] px-2 py-1">
                             <Image
-                                src={getFeedCategoryIcon(item.category) ?? noImageIcon}
-                                alt="category"
+                                src={chipIcon}
+                                alt={showShopAsChip ? "shop" : "category"}
                                 height={20}
                                 width={20}
                                 unoptimized
-                                className="h-5 w-5 object-cover"
+                                // Only the shop logo is round; a category icon stays
+                                // square exactly as it renders on every other card.
+                                className={`h-5 w-5 object-cover${showShopAsChip ? " rounded-full" : ""}`}
                             />
                         </div>
-                        <div className="text-[14px] px-2 py-1 font-light text-white">
-                            {getFeedCategoryLabel(item.category, currentLanguage)}
+                        <div className="text-[14px] px-2 py-1 font-light text-white truncate max-w-[220px]">
+                            {chipLabel}
                         </div>
                     </div>
                     <h3 className="text-[16px] font-medium mt-2 ">{item.title}</h3>

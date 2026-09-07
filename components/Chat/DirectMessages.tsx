@@ -43,6 +43,11 @@ function DirectMessages({
     },
         {
             skip: !userId,
+            // The cached result may be an earlier empty/error response from before
+            // the backend finished starting. Always ask for current conversations
+            // when the chat page returns to view.
+            refetchOnMountOrArgChange: true,
+            refetchOnFocus: true,
         },
     );
 
@@ -89,7 +94,7 @@ function DirectMessages({
         const socket = initializeSocket("chat");
         if (!socket) return;
         socket.on("receiveMessage", (data) => {
-            dispatch(baseApi.util.invalidateTags(["Chat"]));
+            dispatch(baseApi.util.invalidateTags([{ type: "Chat", id: "LIST" }]));
         });
     }, [dispatch]);
 

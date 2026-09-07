@@ -16,7 +16,10 @@ export const chatService = baseApi.injectEndpoints({
           method: "GET",
         };
       },
-      providesTags: ["Chat"],
+      providesTags: (_result, _error, { id }) => [
+        { type: "Chat", id: `LIST-${id}` },
+        { type: "Chat", id: "LIST" },
+      ],
     }),
     initiateChat: build.mutation({
       query: ({ buyerId, sellerId }: { buyerId: string; sellerId: string }) => {
@@ -26,7 +29,9 @@ export const chatService = baseApi.injectEndpoints({
           body: { buyerId, sellerId },
         };
       },
-      invalidatesTags: ["Chat"],
+      invalidatesTags: [
+        { type: "Chat", id: "LIST" },
+      ],
     }),
     getConversationMessages: build.query({
       query: ({
@@ -43,7 +48,9 @@ export const chatService = baseApi.injectEndpoints({
           method: "GET",
         };
       },
-      providesTags: ["Chat"],
+      providesTags: (_result, _error, { conversationId }) => [
+        { type: "Chat", id: `MSG-${conversationId}` },
+      ],
     }),
     sendMessage: build.mutation({
       query: (body: any) => {
@@ -53,7 +60,10 @@ export const chatService = baseApi.injectEndpoints({
           body: body,
         };
       },
-      invalidatesTags: ["Chat"],
+      invalidatesTags: (_result, _error, arg: any) => [
+        { type: "Chat", id: `MSG-${arg?.conversationId ?? ""}` },
+        { type: "Chat", id: "LIST" },
+      ],
     }),
     unreadMessagesCount: build.query({
       query: ({ userId }: { userId: string }) => {
@@ -62,7 +72,9 @@ export const chatService = baseApi.injectEndpoints({
           method: "GET",
         };
       },
-      providesTags: ["Chat"],
+      providesTags: (_result, _error, { userId }) => [
+        { type: "Chat", id: `UNREAD-${userId}` },
+      ],
     }),
     markMessagesAsRead: build.mutation({
       query: ({
@@ -78,7 +90,11 @@ export const chatService = baseApi.injectEndpoints({
           body: { conversationId, userId },
         };
       },
-      invalidatesTags: ["Chat"],
+      invalidatesTags: (_result, _error, { conversationId, userId }) => [
+        { type: "Chat", id: `MSG-${conversationId}` },
+        { type: "Chat", id: `UNREAD-${userId}` },
+        { type: "Chat", id: "LIST" },
+      ],
     }),
     markBroadcastMessagesAsRead: build.mutation({
       query: ({

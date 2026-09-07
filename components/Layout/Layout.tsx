@@ -246,7 +246,7 @@ function Layout({ children }: { children: React.ReactNode }) {
           }
         });
       }
-      dispatch(baseApi.util.invalidateTags(["Chat"]));
+      dispatch(baseApi.util.invalidateTags([{ type: "Chat", id: "LIST" }]));
     };
 
     const onReceiveBroadcastMessage = (data: unknown) => {

@@ -313,6 +313,8 @@
         "say_hi_to_begin_conversation": "Say hi to begin a conversation",
         "no_messages_yet": "No messages yet",
         "messages_appear_here": "When someone sends a message to you, it appears here.",
+        "no_feed_yet": "No feed yet",
+        "feed_appears_here": "When products or services with videos are added, they will appear here.",
         "direct_messages": "Direct messages",
         "broadcast_messages": "Broadcast messages",
         "write_a_message": "Write a message...",
