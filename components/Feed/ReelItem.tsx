@@ -42,7 +42,9 @@ export default function ReelItem({
     const [isPlaying, setIsPlaying] = useState(false);
     const [duration, setDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
-    const [isLiked, setIsLiked] = useState(false);
+    // Seeded from the item the API already resolved for this user, so the heart
+    // is correct on first paint instead of starting false and flipping later.
+    const [isLiked, setIsLiked] = useState(!!item.isLiked);
     const [likesCount, setLikesCount] = useState(item.likesCount ?? 0);
     const [sharesCount, setSharesCount] = useState(item.sharesCount ?? 0);
     const feedType = type === "products" ? "product" : "service";
@@ -85,14 +87,20 @@ export default function ReelItem({
         // instance must re-sync its counts whenever the item it represents changes.
         setLikesCount(item.likesCount ?? 0);
         setSharesCount(item.sharesCount ?? 0);
+        // isLiked has to reset too. Without this a recycled instance kept the
+        // previous item's liked state, so the heart showed red on cards the
+        // user had never liked.
+        setIsLiked(!!item.isLiked);
         trackedViewRef.current = false;
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [item.id]);
     useEffect(() => {
         if (!likedVideoByUser?.data) return;
+        // Must match THIS card's item, not whichever reel happens to be active —
+        // comparing against activeReel made every mounted card resolve to the
+        // same boolean.
         const liked = likedVideoByUser.data.some(
-            (like: { itemId?: string }) =>
-                like.itemId === activeReel?.id
+            (like: { itemId?: string }) => like.itemId === item.id
         );
         setIsLiked(liked);
     }, [likedVideoByUser, item.id]);

@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useGetAllProductsFeedQuery } from "@/store/services/feedService";
+import { getUserId } from "@/utils/getUserId";
 import ReelsFeed, { type ReelItem } from "./ReelsFeed";
 import {
     resolveFeedEntityId,
@@ -64,11 +65,12 @@ function normalizeCategory(category: unknown): ReelItem["category"] {
 
 function ProductFeeds() {
     const { placeholders } = useDictionary();
+    const userId = getUserId() ?? "";
     const LIMIT = 10;
     const [page, setPage] = useState(1);
     const [products, setProducts] = useState<ReelItem[]>([]);
     const [hasMore, setHasMore] = useState(true);
-    const { data: productsFeed, isLoading, isFetching } = useGetAllProductsFeedQuery({ page, limit: LIMIT });
+    const { data: productsFeed, isLoading, isFetching } = useGetAllProductsFeedQuery({ page, limit: LIMIT, userId });
     const isInitialLoading = products.length === 0 && (isLoading || isFetching);
 
     useEffect(() => {
@@ -103,6 +105,7 @@ function ProductFeeds() {
                             : undefined,
                         likesCount: product.likesCount ?? 0,
                         sharesCount: product.sharesCount ?? 0,
+                        isLiked: !!product.isLiked,
                         isVideoPost: !!product.isVideoPost,
                     };
                 })

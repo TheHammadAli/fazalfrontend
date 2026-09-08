@@ -68,7 +68,15 @@ function BroadCastList({ items, onScroll, onSelectItem, chatId, activeTab }: Bro
                         </div>
 
                         <p className="mt-1 text-[14px] rtl:text-right ltr:text-left  font-normal text-black-1">
-                            {item?.threadCount || 0} {ph("recipients")} <span className="mx-3 text-gray-2">|</span>{" "}
+                            {/* How many sellers a broadcast reached only means something to
+                                the person who sent it. A received broadcast carries no
+                                threadCount at all, so this rendered a bare "0 recipients". */}
+                            {activeTab !== "received" ? (
+                                <>
+                                    {item?.threadCount || 0} {ph("recipients")}
+                                    <span className="mx-3 text-gray-2">|</span>{" "}
+                                </>
+                            ) : null}
                             <span className="text-[#FF8A00]">
                                 {item?.radius ?? ""}{" "}
                                 {placeholders["km" as keyof typeof placeholders] ?? "km"}

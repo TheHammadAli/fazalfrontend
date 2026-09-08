@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useGetAllServicesFeedQuery } from "@/store/services/feedService";
+import { getUserId } from "@/utils/getUserId";
 import ReelsFeed, { type ReelItem } from "./ReelsFeed";
 import {
     resolveFeedEntityId,
@@ -24,6 +25,7 @@ type ServiceFeedItem = {
     category?: unknown;
     likesCount?: number;
     sharesCount?: number;
+    isLiked?: boolean;
     isVideoPost?: boolean;
 };
 
@@ -57,11 +59,12 @@ function normalizeCategory(category: unknown): ReelItem["category"] {
 
 function ServiceFeeds() {
     const { placeholders } = useDictionary();
+    const userId = getUserId() ?? "";
     const LIMIT = 10;
     const [page, setPage] = useState(1);
     const [services, setServices] = useState<ReelItem[]>([]);
     const [hasMore, setHasMore] = useState(true);
-    const { data: servicesFeed, isLoading, isFetching } = useGetAllServicesFeedQuery({ page, limit: LIMIT });
+    const { data: servicesFeed, isLoading, isFetching } = useGetAllServicesFeedQuery({ page, limit: LIMIT, userId });
     const isInitialLoading = services.length === 0 && (isLoading || isFetching);
 
     useEffect(() => {
@@ -85,6 +88,7 @@ function ServiceFeeds() {
                         ownerImage: resolveFeedEntityImage(ownerEntity as any),
                         likesCount: service.likesCount ?? 0,
                         sharesCount: service.sharesCount ?? 0,
+                        isLiked: !!service.isLiked,
                         isVideoPost: !!service.isVideoPost,
                     };
                 })

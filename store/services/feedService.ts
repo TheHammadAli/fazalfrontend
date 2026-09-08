@@ -7,9 +7,12 @@ export const feedService = baseApi.injectEndpoints({
   overrideExisting: process.env.NODE_ENV === "development",
   endpoints: (build) => ({
     getAllProductsFeed: build.query({
-      query: ({ page, limit }: { page: number; limit: number }) => {
+      // userId is what makes the API return `isLiked` per item. Without it the
+      // heart state has to be guessed client-side, which is how it ended up
+      // showing on the wrong cards.
+      query: ({ page, limit, userId }: { page: number; limit: number; userId?: string }) => {
         return {
-          url: `/products/with-videos/all?page=${page}&limit=${limit}`,
+          url: `/products/with-videos/all?page=${page}&limit=${limit}${userId ? `&userId=${userId}` : ""}`,
           method: "GET",
         };
       },
@@ -19,9 +22,9 @@ export const feedService = baseApi.injectEndpoints({
       providesTags: ["PRODUCT"],
     }),
     getAllServicesFeed: build.query({
-      query: ({ page, limit }: { page: number; limit: number }) => {
+      query: ({ page, limit, userId }: { page: number; limit: number; userId?: string }) => {
         return {
-          url: `/services/with-videos/all?page=${page}&limit=${limit}`,
+          url: `/services/with-videos/all?page=${page}&limit=${limit}${userId ? `&userId=${userId}` : ""}`,
           method: "GET",
         };
       },

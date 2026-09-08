@@ -16,6 +16,7 @@ export type ReelItem = {
     price: string;
     category: ReelCategory;
     likesCount?: number;
+    isLiked?: boolean;
     sharesCount?: number;
     isVideoPost?: boolean;
 };
