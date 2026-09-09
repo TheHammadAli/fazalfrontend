@@ -138,18 +138,21 @@ function LocationSelect({
           <Image src={chevDown} alt="" className="h-[16px] w-[12px] shrink-0" />
         </button>
 
+        {/* One solid panel: the search box and the gap under it used to be
+            transparent, so the next field down showed straight through the
+            open dropdown. */}
         {isOpen && !disabled && (
-          <div className="absolute z-20 mt-1 w-full">
+          <div className="absolute z-30 mt-1 w-full overflow-hidden rounded-md border border-gray-200 bg-white shadow-md">
             <input
               autoFocus
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={placeholder}
-              className="w-full rounded-md border border-gray-200 px-4 py-2 text-sm font-light outline-none"
+              className="w-full border-b border-gray-200 bg-white px-4 py-2 text-sm font-light outline-none"
             />
 
-            <div className="mt-2 max-h-[260px] overflow-y-auto rounded-md border border-gray-200 bg-white shadow-md">
+            <div className="max-h-[260px] overflow-y-auto bg-white">
               {loading && (
                 <div className="space-y-1 p-1">
                   {Array.from({ length: 4 }).map((_, i) => (
