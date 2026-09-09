@@ -119,13 +119,20 @@ function CreateShop() {
 
   const cityAreaOptions = useMemo(() => {
     const rows =
-      (cityAreasData as { data?: { mainText?: string; description?: string }[] } | undefined)
-        ?.data ?? [];
-    return rows.map((row) => ({
-      name: row.mainText ?? row.description ?? "",
-      subtitle: row.description,
-      coordinates: null,
-    }));
+      (
+        cityAreasData as
+          | { data?: { name?: string; mainText?: string; description?: string }[] }
+          | undefined
+      )?.data ?? [];
+    // `name` is what the field stores — "Faisal Hills", not
+    // "Faisal Hills, Taxila". mainText is the older shape, kept as a fallback.
+    return rows
+      .map((row) => ({
+        name: row.name ?? row.mainText ?? row.description ?? "",
+        subtitle: row.description,
+        coordinates: null,
+      }))
+      .filter((option) => option.name);
   }, [cityAreasData]);
 
   const categoryOptions = (categoriesData?.data as ShopCategory[] | undefined) ?? [];
