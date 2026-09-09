@@ -67,6 +67,12 @@ export const authService = baseApi.injectEndpoints({
         method: "GET",
       }),
     }),
+    reverseGeocode: build.query({
+      query: (params: { lat: string; lng: string }) => ({
+        url: `/search/reverse-geocode?${new URLSearchParams(params)}`,
+        method: "GET",
+      }),
+    }),
     getUserWithProvidedToken: build.query({
       query: ({ token }) => {
         return {
@@ -108,6 +114,7 @@ export const {
   useGetUserWithProvidedTokenQuery,
   useGetLocationsQuery,
   useGetCityAreasQuery,
+  useLazyReverseGeocodeQuery,
   useResetPasswordMutation,
   useLazyVerifyEmailQuery,
   useForgotPasswordMutation,

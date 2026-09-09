@@ -13,6 +13,7 @@ import { useClickOutside } from "@/custom-hooks/useClickOutside";
 import { useDebounce } from "use-debounce";
 import { useGetCityAreasQuery, useGetLocationsQuery } from "@/store/services/authService";
 import LocationSelect, { type LocationCoordinates } from "@/components/Ui/LocationSelect";
+import LocationPickerModal from "@/components/Ui/LocationPickerModal";
 import { PAKISTAN_CITY_OPTIONS } from "@/assets/content/locations";
 import locationIcon from "@/assets/icons/location-icon.svg";
 import { useCreateShopMutation } from "@/store/services/sellingService";
@@ -55,6 +56,7 @@ function CreateShop() {
   const locationRef = useRef<HTMLDivElement | null>(null);
   const subcategoryRef = useRef<HTMLDivElement | null>(null);
   const [isLocationOpen, setIsLocationOpen] = useState(false);
+  const [isMapPickerOpen, setIsMapPickerOpen] = useState(false);
   const [isCatOpen, setIsCatOpen] = useState(false);
   const [isSubcategoryOpen, setIsSubcategoryOpen] = useState(false);
   const [location, setLocation] = useState<Location>({});
@@ -701,6 +703,15 @@ function CreateShop() {
                   />
                 </div>
                 <div className="h-[1px]  bg-gray-9"></div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsMapPickerOpen(true)}
+                  className="mt-2 inline-flex cursor-pointer items-center gap-2 text-[14px] font-medium text-green-1"
+                >
+                  <Image src={locationIcon} alt="" className="h-[14px] w-[11px]" />
+                  {placeholders.choose_on_map ?? "Choose on map"}
+                </button>
                 {isLocationOpen && (
                   <div className="absolute z-20  w-full bg-white pt-1   ">
                     <input
@@ -801,6 +812,39 @@ function CreateShop() {
           </form>
         )}
       </div>
+
+      <LocationPickerModal
+        open={isMapPickerOpen}
+        onClose={() => setIsMapPickerOpen(false)}
+        initial={
+          location?.coordinates?.lat != null && location?.coordinates?.lng != null
+            ? {
+                description: location.description ?? "",
+                coordinates: {
+                  lat: location.coordinates.lat,
+                  lng: location.coordinates.lng,
+                },
+              }
+            : null
+        }
+        labels={{
+          title: placeholders.choose_location,
+          search: placeholders.search_country,
+          useCurrent: placeholders.use_current_location ?? "Use my current location",
+          confirm: placeholders.confirm,
+          cancel: placeholders.cancel,
+        }}
+        onConfirm={(picked) => {
+          // Same shape the search dropdown produces, so everything downstream
+          // — validation and the GeoJSON built on submit — is unchanged.
+          setLocation({
+            description: picked.description,
+            coordinates: picked.coordinates,
+          });
+          setAddress(picked.description);
+          setLocationError("");
+        }}
+      />
     </div>
   );
 }

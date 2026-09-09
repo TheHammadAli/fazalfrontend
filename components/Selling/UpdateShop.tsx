@@ -13,6 +13,7 @@ import { useClickOutside } from "@/custom-hooks/useClickOutside";
 import { useDebounce } from "use-debounce";
 import { useGetCityAreasQuery, useGetLocationsQuery } from "@/store/services/authService";
 import LocationSelect, { type LocationCoordinates } from "@/components/Ui/LocationSelect";
+import LocationPickerModal from "@/components/Ui/LocationPickerModal";
 import { PAKISTAN_CITY_OPTIONS } from "@/assets/content/locations";
 import locationIcon from "@/assets/icons/location-icon.svg";
 import {
@@ -72,6 +73,7 @@ function UpdateShop() {
   const locationRef = useRef<HTMLDivElement | null>(null);
   const subcategoryRef = useRef<HTMLDivElement | null>(null);
   const [isLocationOpen, setIsLocationOpen] = useState(false);
+  const [isMapPickerOpen, setIsMapPickerOpen] = useState(false);
   const [isCatOpen, setIsCatOpen] = useState(false);
   const [isSubcategoryOpen, setIsSubcategoryOpen] = useState(false);
   const [banner, setBanner] = useState<File | null | string>(null);
@@ -751,6 +753,15 @@ function UpdateShop() {
                 />
               </div>
               <div className="h-[1px]  bg-gray-9"></div>
+
+              <button
+                type="button"
+                onClick={() => setIsMapPickerOpen(true)}
+                className="mt-2 inline-flex cursor-pointer items-center gap-2 text-[14px] font-medium text-green-1"
+              >
+                <Image src={locationIcon} alt="" className="h-[14px] w-[11px]" />
+                {placeholders.choose_on_map ?? "Choose on map"}
+              </button>
               {isLocationOpen && (
                 <div className="absolute z-20  w-full bg-white pt-1   ">
                   <input
@@ -871,6 +882,43 @@ function UpdateShop() {
           </DoodleButton>
         </form>
       </div>
+
+      <LocationPickerModal
+        open={isMapPickerOpen}
+        onClose={() => setIsMapPickerOpen(false)}
+        initial={
+          // A saved shop's location comes back as GeoJSON — [lng, lat] — while
+          // a freshly picked one is { lat, lng }. Both open the map correctly.
+          (() => {
+            const c = location?.coordinates as
+              | number[]
+              | { lat?: number; lng?: number }
+              | undefined;
+            const lat = Array.isArray(c) ? c[1] : c?.lat;
+            const lng = Array.isArray(c) ? c[0] : c?.lng;
+            return lat != null && lng != null
+              ? { description: location?.description ?? "", coordinates: { lat, lng } }
+              : null;
+          })()
+        }
+        labels={{
+          title: placeholders.choose_location,
+          search: placeholders.search_country,
+          useCurrent: placeholders.use_current_location ?? "Use my current location",
+          confirm: placeholders.confirm,
+          cancel: placeholders.cancel,
+        }}
+        onConfirm={(picked) => {
+          // Same shape the search dropdown produces, so everything downstream
+          // — validation and the GeoJSON built on submit — is unchanged.
+          setLocation({
+            description: picked.description,
+            coordinates: picked.coordinates,
+          });
+          setAddress(picked.description);
+          setLocationError("");
+        }}
+      />
     </div>
   );
 }
