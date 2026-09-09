@@ -512,6 +512,14 @@ function UpdateShop() {
             disabled={!city}
             disabledHint={placeholders.choose_city_first ?? "Choose a city first"}
             placeholder={placeholders.search_area ?? "Search area..."}
+            emptyHint={
+              city
+                ? `${placeholders.search_area ?? "Search area..."} (${city})`
+                : undefined
+            }
+            // Neighbourhoods and sectors rather than every shop and police
+            // station that happens to sit in one.
+            types="(regions)"
             near={cityCoordinates}
             withCoordinates={false}
             onSelect={(option) => {

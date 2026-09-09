@@ -43,6 +43,8 @@ type LocationSelectProps = {
   withCoordinates?: boolean;
   /** Message for when the field is disabled, e.g. "Choose a city first". */
   disabledHint?: string;
+  /** Shown before anything is typed and there is no shortlist to offer. */
+  emptyHint?: string;
 };
 
 /**
@@ -64,6 +66,7 @@ function LocationSelect({
   near,
   withCoordinates = true,
   disabledHint,
+  emptyHint,
 }: LocationSelectProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -164,7 +167,7 @@ function LocationSelect({
               {!loading && results.length === 0 && (
                 <p className="px-4 py-3 text-[14px] font-light text-gray-8">
                   {trimmed.length < 2
-                    ? placeholder
+                    ? (emptyHint ?? placeholder)
                     : "No matches found"}
                 </p>
               )}

@@ -456,6 +456,14 @@ function CreateShop() {
               disabled={!city}
               disabledHint={placeholders.choose_city_first ?? "Choose a city first"}
               placeholder={placeholders.search_area ?? "Search area..."}
+              emptyHint={
+                city
+                  ? `${placeholders.search_area ?? "Search area..."} (${city})`
+                  : undefined
+              }
+              // Neighbourhoods and sectors rather than every shop and police
+              // station that happens to sit in one.
+              types="(regions)"
               near={cityCoordinates}
               // Only the name is stored, so the per-result coordinate lookup —
               // one extra Google call each, on every keystroke — is pure cost.
