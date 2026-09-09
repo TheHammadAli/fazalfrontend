@@ -41,6 +41,8 @@ type LocationSelectProps = {
   near?: LocationCoordinates;
   /** Skip the per-result coordinate lookup when only the name is stored. */
   withCoordinates?: boolean;
+  /** Drop results outside this city. `near` only reorders them. */
+  city?: string;
   /** Message for when the field is disabled, e.g. "Choose a city first". */
   disabledHint?: string;
   /** Shown before anything is typed and there is no shortlist to offer. */
@@ -65,6 +67,7 @@ function LocationSelect({
   types,
   near,
   withCoordinates = true,
+  city,
   disabledHint,
   emptyHint,
 }: LocationSelectProps) {
@@ -82,6 +85,7 @@ function LocationSelect({
       ...(types ? { types } : {}),
       ...(near ? { lat: String(near.lat), lng: String(near.lng) } : {}),
       ...(withCoordinates ? {} : { withCoordinates: "false" }),
+      ...(city ? { city } : {}),
     },
     // Two characters, so a single letter does not fire a request per keystroke.
     { skip: trimmed.length < 2 },

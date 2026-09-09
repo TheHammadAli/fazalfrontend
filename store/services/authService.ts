@@ -61,6 +61,12 @@ export const authService = baseApi.injectEndpoints({
         };
       },
     }),
+    getCityAreas: build.query({
+      query: (params) => ({
+        url: `/search/city-areas?${new URLSearchParams(params)}`,
+        method: "GET",
+      }),
+    }),
     getUserWithProvidedToken: build.query({
       query: ({ token }) => {
         return {
@@ -101,6 +107,7 @@ export const {
   useGetProductOwnerDetailQuery,
   useGetUserWithProvidedTokenQuery,
   useGetLocationsQuery,
+  useGetCityAreasQuery,
   useResetPasswordMutation,
   useLazyVerifyEmailQuery,
   useForgotPasswordMutation,

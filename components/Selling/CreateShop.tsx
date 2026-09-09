@@ -11,7 +11,7 @@ import toast from "react-hot-toast";
 import DoodleButton from "@/components/Ui/DoodleButton";
 import { useClickOutside } from "@/custom-hooks/useClickOutside";
 import { useDebounce } from "use-debounce";
-import { useGetLocationsQuery } from "@/store/services/authService";
+import { useGetCityAreasQuery, useGetLocationsQuery } from "@/store/services/authService";
 import LocationSelect, { type LocationCoordinates } from "@/components/Ui/LocationSelect";
 import { PAKISTAN_CITY_OPTIONS } from "@/assets/content/locations";
 import locationIcon from "@/assets/icons/location-icon.svg";
@@ -102,6 +102,31 @@ function CreateShop() {
     },
     { skip: locationSearch?.trim() == "" || locationSearch == null },
   );
+
+
+  // The chosen city's areas, so the Area field has something to show before
+  // anything is typed. Google will not enumerate a city's neighbourhoods, so
+  // the backend assembles this; it is cached per city by the query layer.
+  const { data: cityAreasData } = useGetCityAreasQuery(
+    {
+      city,
+      ...(cityCoordinates
+        ? { lat: String(cityCoordinates.lat), lng: String(cityCoordinates.lng) }
+        : {}),
+    },
+    { skip: !city },
+  );
+
+  const cityAreaOptions = useMemo(() => {
+    const rows =
+      (cityAreasData as { data?: { mainText?: string; description?: string }[] } | undefined)
+        ?.data ?? [];
+    return rows.map((row) => ({
+      name: row.mainText ?? row.description ?? "",
+      subtitle: row.description,
+      coordinates: null,
+    }));
+  }, [cityAreasData]);
 
   const categoryOptions = (categoriesData?.data as ShopCategory[] | undefined) ?? [];
 
@@ -464,6 +489,12 @@ function CreateShop() {
               // Neighbourhoods and sectors rather than every shop and police
               // station that happens to sit in one.
               types="(regions)"
+              // Not just biased: without this a search for "model" in
+              // Lahore also offers Model Town in Gujranwala and Islamabad.
+              city={city}
+              // Offered the moment the field opens, so the areas can be
+              // browsed rather than only searched.
+              initialOptions={cityAreaOptions}
               near={cityCoordinates}
               // Only the name is stored, so the per-result coordinate lookup —
               // one extra Google call each, on every keystroke — is pure cost.
