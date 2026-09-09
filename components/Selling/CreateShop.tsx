@@ -12,6 +12,8 @@ import DoodleButton from "@/components/Ui/DoodleButton";
 import { useClickOutside } from "@/custom-hooks/useClickOutside";
 import { useDebounce } from "use-debounce";
 import { useGetLocationsQuery } from "@/store/services/authService";
+import LocationSelect, { type LocationCoordinates } from "@/components/Ui/LocationSelect";
+import { PAKISTAN_CITY_OPTIONS } from "@/assets/content/locations";
 import locationIcon from "@/assets/icons/location-icon.svg";
 import { useCreateShopMutation } from "@/store/services/sellingService";
 import ShopCreated from "./ShopCreated";
@@ -72,6 +74,8 @@ function CreateShop() {
   const [areaError, setAreaError] = useState("");
   const [city, setCity] = useState("");
   const [cityError, setCityError] = useState("");
+  // Kept so the Area search can rank that city's neighbourhoods first.
+  const [cityCoordinates, setCityCoordinates] = useState<LocationCoordinates>(null);
   const [marketName, setMarketName] = useState("");
   const [marketNameError, setMarketNameError] = useState("");
   const [contact, setContact] = useState("");
@@ -409,39 +413,59 @@ function CreateShop() {
 
             <div className="space-y-1 mt-5 w-full">
               <p
-                className={`text-[14px] font-normal ${areaError ? "text-red-1" : "text-gray-8"
+                className={`text-[14px] font-normal  ${descriptionError ? "text-red-1" : "text-gray-8"
                   }`}
               >
-                {info_messages.area ?? "Area"}
+                {info_messages.describe_shop}
               </p>
-              <input
-                type="text"
-                value={area}
-                onChange={(e) => setArea(e.target.value)}
-                className="h-[28px] w-full border-b-[1px] border-gray-9 text-[15px] font-normal text-black-1 focus:outline-none"
+              <textarea
+                value={description}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setDescription(e.target.value)
+                }
+                draggable={false}
+                className="h-[70px] resize-none text-[15px] text-black-1 font-normal focus:outline-none w-full border-gray-9 border-b-[1px] "
               />
-              {areaError && (
-                <p className="text-[14px] font-normal text-red-1">{areaError}</p>
+              {descriptionError && (
+                <p className="text-red-1 text-[14px] font-normal">
+                  {descriptionError}
+                </p>
               )}
             </div>
 
-            <div className="space-y-1 mt-5 w-full">
-              <p
-                className={`text-[14px] font-normal ${cityError ? "text-red-1" : "text-gray-8"
-                  }`}
-              >
-                {info_messages.city ?? "City"}
-              </p>
-              <input
-                type="text"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                className="h-[28px] w-full border-b-[1px] border-gray-9 text-[15px] font-normal text-black-1 focus:outline-none"
-              />
-              {cityError && (
-                <p className="text-[14px] font-normal text-red-1">{cityError}</p>
-              )}
-            </div>
+            <LocationSelect
+              label={info_messages.city ?? "City"}
+              value={city}
+              error={cityError}
+              placeholder={placeholders.search_city ?? "Search city..."}
+              initialOptions={PAKISTAN_CITY_OPTIONS}
+              types="(cities)"
+              onSelect={(option) => {
+                setCity(option.name);
+                setCityCoordinates(option.coordinates ?? null);
+                setCityError("");
+                // The old area belongs to the old city.
+                setArea("");
+              }}
+            />
+
+            <LocationSelect
+              label={info_messages.area ?? "Area"}
+              value={area}
+              error={areaError}
+              disabled={!city}
+              disabledHint={placeholders.choose_city_first ?? "Choose a city first"}
+              placeholder={placeholders.search_area ?? "Search area..."}
+              near={cityCoordinates}
+              // Only the name is stored, so the per-result coordinate lookup —
+              // one extra Google call each, on every keystroke — is pure cost.
+              withCoordinates={false}
+              onSelect={(option) => {
+                setArea(option.name);
+                setAreaError("");
+              }}
+            />
+
 
             <div className="space-y-1 mt-5 w-full">
               <p
@@ -716,27 +740,6 @@ function CreateShop() {
               <p className="text-[#030303] font-medium text-[14px] underline cursor-pointer">
                 {placeholders.choose_map_location}
               </p>
-            </div>
-            <div className="space-y-1 mt-5 w-full">
-              <p
-                className={`text-[14px] font-normal  ${descriptionError ? "text-red-1" : "text-gray-8"
-                  }`}
-              >
-                {info_messages.describe_shop}
-              </p>
-              <textarea
-                value={description}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                  setDescription(e.target.value)
-                }
-                draggable={false}
-                className="h-[70px] resize-none text-[15px] text-black-1 font-normal focus:outline-none w-full border-gray-9 border-b-[1px] "
-              />
-              {descriptionError && (
-                <p className="text-red-1 text-[14px] font-normal">
-                  {descriptionError}
-                </p>
-              )}
             </div>
             <DoodleButton
               type="submit"

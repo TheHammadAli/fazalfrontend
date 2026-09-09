@@ -12,6 +12,8 @@ import DoodleButton from "@/components/Ui/DoodleButton";
 import { useClickOutside } from "@/custom-hooks/useClickOutside";
 import { useDebounce } from "use-debounce";
 import { useGetLocationsQuery } from "@/store/services/authService";
+import LocationSelect, { type LocationCoordinates } from "@/components/Ui/LocationSelect";
+import { PAKISTAN_CITY_OPTIONS } from "@/assets/content/locations";
 import locationIcon from "@/assets/icons/location-icon.svg";
 import {
   useGetShopDetailQuery,
@@ -90,6 +92,7 @@ function UpdateShop() {
   const [areaError, setAreaError] = useState("");
   const [city, setCity] = useState("");
   const [cityError, setCityError] = useState("");
+  const [cityCoordinates, setCityCoordinates] = useState<LocationCoordinates>(null);
   const [marketName, setMarketName] = useState("");
   const [marketNameError, setMarketNameError] = useState("");
   const [contact, setContact] = useState("");
@@ -185,6 +188,11 @@ function UpdateShop() {
     setBanner(shopData?.banner ?? null);
     setArea(shopData?.area ?? "");
     setCity(shopData?.city ?? "");
+    setCityCoordinates(
+      PAKISTAN_CITY_OPTIONS.find(
+        (option) => option.name.toLowerCase() === (shopData?.city ?? "").toLowerCase(),
+      )?.coordinates ?? null,
+    );
     setMarketName(shopData?.marketName ?? "");
     setContact(shopData?.contact ?? "");
     setOpeningHours(shopData?.openingHours ?? "");
@@ -481,41 +489,36 @@ function UpdateShop() {
             )}
           </div>
 
-          <div className="space-y-1 mt-5 w-full">
-            <p
-              className={`text-[14px] font-normal ${areaError ? "text-red-1" : "text-gray-8"
-                }`}
-            >
-              {info_messages.area ?? "Area"}
-            </p>
-            <input
-              type="text"
-              value={area}
-              onChange={(e) => setArea(e.target.value)}
-              className="h-[28px] w-full border-b-[1px] border-gray-9 text-[15px] font-normal text-black-1 focus:outline-none"
-            />
-            {areaError && (
-              <p className="text-[14px] font-normal text-red-1">{areaError}</p>
-            )}
-          </div>
+          <LocationSelect
+            label={info_messages.city ?? "City"}
+            value={city}
+            error={cityError}
+            placeholder={placeholders.search_city ?? "Search city..."}
+            initialOptions={PAKISTAN_CITY_OPTIONS}
+            types="(cities)"
+            onSelect={(option) => {
+              setCity(option.name);
+              setCityCoordinates(option.coordinates ?? null);
+              setCityError("");
+              // The saved area belongs to the previous city.
+              setArea("");
+            }}
+          />
 
-          <div className="space-y-1 mt-5 w-full">
-            <p
-              className={`text-[14px] font-normal ${cityError ? "text-red-1" : "text-gray-8"
-                }`}
-            >
-              {info_messages.city ?? "City"}
-            </p>
-            <input
-              type="text"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              className="h-[28px] w-full border-b-[1px] border-gray-9 text-[15px] font-normal text-black-1 focus:outline-none"
-            />
-            {cityError && (
-              <p className="text-[14px] font-normal text-red-1">{cityError}</p>
-            )}
-          </div>
+          <LocationSelect
+            label={info_messages.area ?? "Area"}
+            value={area}
+            error={areaError}
+            disabled={!city}
+            disabledHint={placeholders.choose_city_first ?? "Choose a city first"}
+            placeholder={placeholders.search_area ?? "Search area..."}
+            near={cityCoordinates}
+            withCoordinates={false}
+            onSelect={(option) => {
+              setArea(option.name);
+              setAreaError("");
+            }}
+          />
 
           <div className="space-y-1 mt-5 w-full">
             <p

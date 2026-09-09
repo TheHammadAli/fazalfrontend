@@ -142,3 +142,21 @@ export const locations = [
     coordinates: { latitude: 43.6532, longitude: -79.3832 },
   },
 ];
+
+/**
+ * The shortlist a City field shows the moment it opens, since Google suggests
+ * nothing until something is typed. Typing then searches the whole country.
+ *
+ * `locations` also carries a few foreign cities for other screens; shops are
+ * Pakistan-only, matching the country restriction the autocomplete endpoint
+ * already applies.
+ */
+export const PAKISTAN_CITY_OPTIONS = locations
+  .filter((location) => location.subtitle?.includes("Pakistan"))
+  .map((location) => ({
+    name: location.name,
+    subtitle: location.subtitle,
+    coordinates: location.coordinates
+      ? { lat: location.coordinates.latitude, lng: location.coordinates.longitude }
+      : null,
+  }));
