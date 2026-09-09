@@ -72,9 +72,12 @@ function DirectMessages({
     }, [filteredThreads, userId]);
     const presence = usePresence(presenceIds, presenceSeed);
 
-    const totalPages = parsePositiveInt(conversations?.data?.totalPages);
-    const lastBatch =
-        (conversations?.data?.conversations as ChatThread[] | undefined) ?? [];
+    // The response is { data: [...], meta: { totalPages } } — `meta` sits beside
+    // `data`, not inside it. Read from `data.totalPages` / `data.conversations`,
+    // both were always undefined, which left canLoadMore permanently false and
+    // stopped the list ever paging past the first batch.
+    const totalPages = parsePositiveInt(conversations?.meta?.totalPages);
+    const lastBatch = (conversations?.data as ChatThread[] | undefined) ?? [];
     const canLoadMore =
         totalPages != null ? page < totalPages : lastBatch.length >= PAGE_LIMIT;
 
@@ -99,24 +102,52 @@ function DirectMessages({
     }, [dispatch]);
 
     useEffect(() => {
-        const firstConversation = conversations?.data?.[0] as ChatThread | undefined;
-        const matchedConversation = conversations?.data?.find((conversation: ChatThread) => conversation?._id === chatId);
-        if (chatId && matchedConversation) {
-            onSelectChat(matchedConversation);
+        const batch = (conversations?.data as ChatThread[] | undefined) ?? [];
+        if (page === 1) {
+            setFilteredThreads(batch);
+        } else {
+            setFilteredThreads((prev) => [...prev, ...batch]);
         }
-        // Auto-open first chat on large screens only (sidebar + window layout)
+    }, [conversations?.data, page]);
+
+    /**
+     * Which conversation this component has already opened on the user's behalf.
+     *
+     * Opening is a one-off per conversation, not something to redo whenever the
+     * list refreshes. An incoming message invalidates the list, so re-selecting
+     * on every refresh meant that on mobile — where selecting a chat replaces
+     * the list with the conversation — a new message yanked the user out of the
+     * list and into that chat. Going Back leaves chatId set, so it happened
+     * again on the next message.
+     */
+    const autoOpenedIdRef = React.useRef<string | null>(null);
+
+    useEffect(() => {
+        const threads = (conversations?.data as ChatThread[] | undefined) ?? [];
+
+        if (chatId) {
+            // Already handled — a list refresh must not reopen it.
+            if (autoOpenedIdRef.current === chatId) return;
+            const matched = threads.find((conversation) => conversation?._id === chatId);
+            if (matched) {
+                autoOpenedIdRef.current = chatId;
+                onSelectChat(matched);
+            }
+            return;
+        }
+
+        // Nothing selected: open the newest conversation, but only on the wide
+        // layout that shows the list and the conversation side by side, and only
+        // once — so closing a chat does not spring it straight back open.
         const isLargeScreen =
             typeof window !== "undefined" &&
             window.matchMedia("(min-width: 1024px)").matches;
-        if (!chatId && firstConversation && isLargeScreen) {
-            onSelectChat(firstConversation);
+        const first = threads[0];
+        if (isLargeScreen && first && autoOpenedIdRef.current === null) {
+            autoOpenedIdRef.current = first._id ?? null;
+            onSelectChat(first);
         }
-        if (page === 1) {
-            setFilteredThreads(conversations?.data ?? []);
-        } else {
-            setFilteredThreads((prev) => [...prev, ...conversations?.data]);
-        }
-    }, [chatId, conversations?.data, onSelectChat, page]);
+    }, [chatId, conversations?.data, onSelectChat]);
 
     return (
         <ul onScroll={handleScrollNearBottom} className="h-[calc(100%-104px)] overflow-y-auto">
