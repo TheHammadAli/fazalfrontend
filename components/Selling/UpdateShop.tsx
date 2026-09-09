@@ -560,6 +560,9 @@ function UpdateShop() {
             // Offered the moment the field opens, so the areas can be
             // browsed rather than only searched.
             initialOptions={cityAreaOptions}
+            // A last resort: if nothing is found for a city, the typed
+            // text can still be used, so the form is never unsubmittable.
+            allowCustom
             near={cityCoordinates}
             withCoordinates={false}
             onSelect={(option) => {

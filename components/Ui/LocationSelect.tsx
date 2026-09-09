@@ -3,6 +3,7 @@
 import React, { useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useDebounce } from "use-debounce";
+import { Plus } from "lucide-react";
 import { useClickOutside } from "@/custom-hooks/useClickOutside";
 import { useGetLocationsQuery } from "@/store/services/authService";
 import chevDown from "@/assets/icons/chev-down-icon.svg";
@@ -47,6 +48,15 @@ type LocationSelectProps = {
   disabledHint?: string;
   /** Shown before anything is typed and there is no shortlist to offer. */
   emptyHint?: string;
+  /**
+   * Let the typed text be used as-is when nothing matches.
+   *
+   * Google has no areas for a small town — around Taxila it labels everything
+   * Rawalpindi, Islamabad or Wah, so a city-scoped search returns nothing.
+   * Without this the field cannot be filled at all there, and the form cannot
+   * be submitted.
+   */
+  allowCustom?: boolean;
 };
 
 /**
@@ -70,6 +80,7 @@ function LocationSelect({
   city,
   disabledHint,
   emptyHint,
+  allowCustom = false,
 }: LocationSelectProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -115,6 +126,14 @@ function LocationSelect({
       coordinates: p.coordinates ?? null,
     }));
   }, [trimmed, search, data, initialOptions]);
+
+  // Only once the search has settled, so the option does not flicker in while
+  // results for what was typed are still on the way.
+  const canUseTyped =
+    allowCustom &&
+    trimmed.length >= 2 &&
+    !loading &&
+    !results.some((option) => option.name.toLowerCase() === trimmed.toLowerCase());
 
   function choose(option: LocationOption) {
     onSelect(option);
@@ -168,12 +187,25 @@ function LocationSelect({
                 </div>
               )}
 
-              {!loading && results.length === 0 && (
+              {!loading && results.length === 0 && !canUseTyped && (
                 <p className="px-4 py-3 text-[14px] font-light text-gray-8">
                   {trimmed.length < 2
                     ? (emptyHint ?? placeholder)
                     : "No matches found"}
                 </p>
+              )}
+
+              {!loading && canUseTyped && (
+                <button
+                  type="button"
+                  onClick={() => choose({ name: search.trim(), coordinates: null })}
+                  className="flex w-full cursor-pointer items-center gap-2 px-4 py-2 text-left hover:bg-gray-100"
+                >
+                  <Plus className="h-4 w-4 shrink-0 text-green-1" />
+                  <span className="min-w-0 truncate text-[14px] text-black-1">
+                    Use &ldquo;{search.trim()}&rdquo;
+                  </span>
+                </button>
               )}
 
               {!loading &&
