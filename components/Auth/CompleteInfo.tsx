@@ -7,7 +7,6 @@ import countries from "country-list-with-dial-code-and-flag";
 import { useClickOutside } from "@/custom-hooks/useClickOutside";
 import GoogleIcon from "@/assets/icons/google-icon.svg";
 import mailIcon from "@/assets/icons/email-icon.svg";
-import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { BeatLoader } from "react-spinners";
 import {
   useGetLocationsQuery,
@@ -24,15 +23,16 @@ import { useUpdateProfileMutation } from "@/store/services/profileService";
 import Footer from "./Footer";
 import DoodleButton from "@/components/Ui/DoodleButton";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
+import {
+  clampNationalDigits,
+  describeExpectedLength,
+  getPhoneLengthRule,
+  isCompleteMobileNumber,
+} from "@/utils/phoneRules";
 
 export type Body = {
   email?: string;
   phoneNumber?: string;
-};
-
-export const validatePhone = (phone: string): boolean => {
-  const phoneNumber = parsePhoneNumberFromString(phone);
-  return phoneNumber ? phoneNumber.isValid() : false;
 };
 
 interface Location {
@@ -58,8 +58,11 @@ function CompleteInfo() {
   const [phoneError, setPhoneError] = useState("");
   const [countryCodeError, setCountryCodeError] = useState("");
   const [countryCode, setCountryCode] = useState("");
+  // National digits only — the dial code is shown as a fixed prefix beside the
+  // input, so it can no longer be edited or deleted by mistake.
   const [phone, setPhone] = useState("");
   const [countryName, setCountryName] = useState("");
+  const [countryIso, setCountryIso] = useState("");
   const [locationError, setLocationError] = useState("");
   const [locationSearch, setLocationSearch] = useState("");
   const [location, setLocation] = useState<Location>({});
@@ -77,10 +80,16 @@ function CompleteInfo() {
     },
     { skip: locationSearch.trim() == "" || locationSearch == null }
   );
-  const simplified = allCountries.map(({ name, dial_code }) => ({
+  const simplified = allCountries.map(({ name, dial_code, code }) => ({
     name,
     dial_code,
+    code,
   }));
+
+  // How many digits this country's mobile numbers take after the dial code —
+  // 10 for +92, 9 for +971, and so on.
+  const phoneRule = getPhoneLengthRule(countryIso);
+  const expectedLength = describeExpectedLength(phoneRule);
   const [updateProfile, { isLoading, isSuccess, isError, data, error }] =
     useUpdateProfileMutation();
 
@@ -107,11 +116,15 @@ function CompleteInfo() {
     if (phone.trim().length === 0) {
       setPhoneError("Phone number is required*");
       isValid = false;
-    } else if (validatePhone(phone) === false) {
+    } else if (phoneRule.known && !phoneRule.allowed.includes(phone.length)) {
+      // Length is checked before validity so the message can say what is
+      // actually wrong — "enter 10 digits" rather than a blanket "invalid".
+      setPhoneError(`Enter ${expectedLength} after ${countryCode}`);
+      isValid = false;
+    } else if (!isCompleteMobileNumber(countryCode, phone)) {
       setPhoneError("Please enter valid phone number");
       isValid = false;
     } else {
-      isValid = true;
       setPhoneError("");
     }
     if (Object.keys(location).length === 0) {
@@ -130,7 +143,9 @@ function CompleteInfo() {
         ],
       };
       const formData = new FormData();
-      formData.append("phone", phone);
+      // The field holds national digits; the backend has always been sent the
+      // full E.164 number, so the dial code is put back on here.
+      formData.append("phone", `${countryCode}${phone}`);
       formData.append("location", JSON.stringify(locationData));
       formData.append("address", location?.description || "");
 
@@ -217,7 +232,17 @@ function CompleteInfo() {
                             onClick={() => {
                               setCountryName(data?.name);
                               setCountryCode(data?.dial_code);
-                              setPhone(data?.dial_code);
+                              setCountryIso(data?.code);
+                              // Keep what was typed but re-cut it to the new
+                              // country's maximum, so switching countries after
+                              // typing can't leave an over-long number behind.
+                              setPhone((current) =>
+                                clampNationalDigits(
+                                  current,
+                                  getPhoneLengthRule(data?.code),
+                                ),
+                              );
+                              setPhoneError("");
                               setIsOpen(false);
                             }}
                             className="text-[14px]  text-gray-8 px-4 py-2 text-sm cursor-pointer font-light hover:bg-gray-100"
@@ -235,18 +260,49 @@ function CompleteInfo() {
               </p>
             )}
             <div className="space-y-2 mt-5">
-              <p className="text-[14px] font-normal text-gray-8">
-                Phone number
-              </p>
-              <input
-                type="phone"
-                value={phone}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setPhone(e.target.value);
-                }}
-                className={`h-[28px] text-[14px] text-gray-8  font-normal focus:outline-none w-full ${phoneError ? "border-red-1" : "border-gray-9"
-                  } border-b-[1px] `}
-              />
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="text-[14px] font-normal text-gray-8">
+                  Phone number
+                </p>
+                {expectedLength && (
+                  <p className="text-[12px] font-normal text-gray-8">
+                    {expectedLength}
+                  </p>
+                )}
+              </div>
+              <div
+                className={`flex items-center gap-2 border-b-[1px] ${phoneError ? "border-red-1" : "border-gray-9"
+                  }`}
+              >
+                {countryCode && (
+                  <span
+                    dir="ltr"
+                    className="shrink-0 text-[14px] font-normal text-black-1"
+                  >
+                    {countryCode}
+                  </span>
+                )}
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel-national"
+                  dir="ltr"
+                  disabled={!countryCode}
+                  // Backstop for anything that sets the value without firing a
+                  // change we can clamp — the onChange below is the real guard.
+                  maxLength={phoneRule.max}
+                  placeholder={countryCode ? "" : "Select a country code first"}
+                  value={phone}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    // Non-digits are dropped rather than rejected, so pasting
+                    // "0300 123 4567" or "+92-300-1234567" still works.
+                    const digits = clampNationalDigits(e.target.value, phoneRule);
+                    setPhone(digits);
+                    if (phoneError) setPhoneError("");
+                  }}
+                  className="h-[28px] w-full text-[14px] font-normal text-gray-8 focus:outline-none disabled:bg-transparent disabled:cursor-not-allowed"
+                />
+              </div>
               {phoneError && (
                 <p className="text-red-1 text-[14px] font-normal">
                   {phoneError}
