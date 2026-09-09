@@ -5,7 +5,6 @@ import Image from "next/image";
 import { type ChatMessage } from "./types";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
 import camIcon from "@/assets/icons/cam-icon.svg";
-import whiteArrowIcon from "@/assets/icons/white-arrow.svg";
 import { getUserId } from "@/utils/getUserId";
 import { usePresence } from "@/custom-hooks/usePresence";
 import formatLastSeen from "@/utils/formatLastSeen";
@@ -20,6 +19,11 @@ import { initializeSocket } from "@/utils/socket";
 import baseApi from "@/store/baseApi";
 import { useAppDispatch } from "@/store/store";
 import { XMarkIcon, MicrophoneIcon, TrashIcon, StopIcon } from "@heroicons/react/24/outline";
+// The send control used assets/icons/white-arrow.svg, which despite its name
+// strokes #C7C7C7 — light grey on the input's light grey field, so it was all
+// but invisible. This takes its colour from the text colour instead, so it
+// reads on the input and on the green voice-preview button alike.
+import { PaperAirplaneIcon } from "@heroicons/react/24/solid";
 import VoiceMessageBubble from "./VoiceMessageBubble";
 import noImageAvtar from "@/assets/images/default-profile-avatar.svg";
 import chatDoodleBackground from "@/assets/images/chat-doodle-bg.jpg";
@@ -643,32 +647,14 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
     [threadType, conversationId, broadcastRequestId, broadcastThreadId],
   );
 
-  useEffect(() => {
-    if (threadType === "broadcast_messages") {
-      if (!broadcastRequestId || !broadcastThreadId) return;
-      if (activeKeyRef.current !== activeKey) return;
-      const incomingBroadcastMessages = (broadcastMessages?.data as ChatMessage[] | undefined) ?? [];
-      setFilteredMessages(incomingBroadcastMessages);
-    }
-  }, [threadType, activeKey, broadcastMessages?.data]);
-
-  useEffect(() => {
-    if (threadType === "direct_messages") {
-      if (!incomingMessages) return;
-      if (activeKeyRef.current !== activeKey) return;
-      if (page === 1) {
-        setFilteredMessages(incomingMessages);
-      } else {
-        setFilteredMessages((prev) => {
-          // Guard against the initial late-arriving page=1 response of a
-          // freshly-opened conversation getting merged into another thread.
-          if (prev.length === 0) return incomingMessages;
-          return [...prev, ...incomingMessages];
-        });
-      }
-    }
-  }, [threadType, activeKey, incomingMessages, page]);
-
+  // Declared BEFORE the two effects that fill the message list, because it is
+  // what brings activeKeyRef up to date and they both refuse to run until it
+  // matches. React runs effects in declaration order, so with this last the
+  // guard compared against the PREVIOUS conversation's key on the very first
+  // pass and both sync effects bailed out. Whenever the query already had the
+  // messages cached — reopening a conversation visited earlier in the session —
+  // nothing changed afterwards to re-trigger them, so the thread stayed empty
+  // until sending a message refreshed the query and finally let them through.
   useEffect(() => {
     const chatSocket = initializeSocket("chat");
     const broadcastSocket = initializeSocket("broadcast");
@@ -705,6 +691,33 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
       });
     }
   }, [activeKey, conversationId, markMessagesAsRead, userId, threadType, broadcastThreadId, isBroadcastReceived, thread?._id, thread?.broadcastId, draftMessage, broadcastRequestId, markBroadcastMessagesAsRead]);
+
+  useEffect(() => {
+    if (threadType === "broadcast_messages") {
+      if (!broadcastRequestId || !broadcastThreadId) return;
+      if (activeKeyRef.current !== activeKey) return;
+      const incomingBroadcastMessages = (broadcastMessages?.data as ChatMessage[] | undefined) ?? [];
+      setFilteredMessages(incomingBroadcastMessages);
+    }
+  }, [threadType, activeKey, broadcastMessages?.data]);
+
+  useEffect(() => {
+    if (threadType === "direct_messages") {
+      if (!incomingMessages) return;
+      if (activeKeyRef.current !== activeKey) return;
+      if (page === 1) {
+        setFilteredMessages(incomingMessages);
+      } else {
+        setFilteredMessages((prev) => {
+          // Guard against the initial late-arriving page=1 response of a
+          // freshly-opened conversation getting merged into another thread.
+          if (prev.length === 0) return incomingMessages;
+          return [...prev, ...incomingMessages];
+        });
+      }
+    }
+  }, [threadType, activeKey, incomingMessages, page]);
+
 
   const sortedFilteredMessages = useMemo(
     () =>
@@ -1192,7 +1205,7 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
               {isSendingMessage || isSendingBroadcastMessage ? (
                 <span className="block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
               ) : (
-                <Image src={whiteArrowIcon} alt="send" className="h-4 w-4" />
+                <PaperAirplaneIcon className="h-4 w-4 text-white" />
               )}
             </button>
           </div>
@@ -1220,7 +1233,7 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
                 rows={Math.min(4, Math.max(1, messageText.split("\n").length))}
                 className="max-h-[120px] min-h-10 w-full resize-none rounded-[10px] bg-[#EEF2F3] px-4 py-2.5 pr-10 text-sm text-[#030303] outline-none placeholder:text-[#949494] rtl:pl-10"
               />
-              <div className="absolute ltr:right-3 rtl:left-3 rtl:rotate-180 bottom-2.5 p-1 hover:bg-green-1/10 rounded-full">
+              <div className="absolute ltr:right-3 rtl:left-3 bottom-2.5 p-1 hover:bg-green-1/10 rounded-full">
                 {isSendingMessage || isSendingBroadcastMessage ? (
                   <span className="">
                     <span className="block h-4 w-4 animate-spin rounded-full border-2 border-[#3C9197] border-t-transparent" />
@@ -1231,11 +1244,11 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
                     className="h-5 w-5 cursor-pointer text-gray-500"
                   />
                 ) : (
-                  <Image
+                  <PaperAirplaneIcon
                     onClick={() => handleSendMessage()}
-                    src={whiteArrowIcon}
-                    alt="white-arrow-icon"
-                    className="cursor-pointer"
+                    role="button"
+                    aria-label={ph("send")}
+                    className="h-5 w-5 cursor-pointer text-green-1 rtl:-scale-x-100"
                   />
                 )}
               </div>
