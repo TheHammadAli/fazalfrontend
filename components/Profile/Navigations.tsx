@@ -17,6 +17,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useAppSelector } from "@/store/store";
 import { useLogout } from "@/custom-hooks/useLogout";
+import ConfirmModal from "../Ui/ConfirmModal";
 import { useGetUserDetailQuery } from "@/store/services/profileService";
 import AvatarUi from "@/components/Ui/AvatarUi";
 import { withImageCacheBust } from "@/utils/withImageCacheBust";
@@ -45,6 +46,8 @@ function Navigations({
   const signOut = useLogout();
   const { userId } = useAppSelector((state) => state.authReducer);
   const [mounted, setMounted] = useState(false);
+  const [logoutModal, setLogoutModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const {
     data: profileData,
     isLoading: profileLoading,
@@ -198,15 +201,36 @@ function Navigations({
       </div> */}
       <div
         className={`px-4 xl:px-6 py-4 flex items-center gap-2 cursor-pointer `}
-        onClick={() => {
-          void signOut().then(() => router.push("/en/signin"));
-        }}
+        onClick={() => setLogoutModal(true)}
       >
         <Image src={privacyIcon} alt="icon" className="" />
         <h2 className="font-semibold text-black-1 text-[15px] first-letter:capitalize">
           {placeholders.logout}
         </h2>
       </div>
+
+      <ConfirmModal
+        open={logoutModal}
+        setOpen={setLogoutModal}
+        title={placeholders.logout}
+        message={
+          placeholders[
+            "logout_confirm_message" as keyof typeof placeholders
+          ] ?? "Are you sure you want to log out?"
+        }
+        confirmLabel={placeholders.logout}
+        loading={isLoggingOut}
+        destructive
+        onConfirm={() => {
+          setIsLoggingOut(true);
+          void signOut()
+            .then(() => router.push("/en/signin"))
+            .finally(() => {
+              setIsLoggingOut(false);
+              setLogoutModal(false);
+            });
+        }}
+      />
     </div>
   );
 }

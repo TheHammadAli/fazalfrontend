@@ -208,6 +208,7 @@
         "are_you_sure_you_want_to_delete_your_account": "Are you sure you want to delete your account? This action cannot be undone.",
         "about_market": "About market",
         "logout": "Logout",
+        "logout_confirm_message": "Are you sure you want to log out?",
         "profile": "Profile",
         "add_photo": "Add photo",
         "firstname": "First name",

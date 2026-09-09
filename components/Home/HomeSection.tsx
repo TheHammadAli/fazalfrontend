@@ -17,6 +17,7 @@ import createShopIcon from "@/assets/icons/create_shop.svg";
 import { useDebounce } from "use-debounce";
 import BroadCastModal from "../Ui/BroadCastModal";
 import Modal from "../Ui/Modals/Modal";
+import ConfirmModal from "../Ui/ConfirmModal";
 import AllProductsAndServices from "./AllProductsAndServices";
 import { useCanInteractAsUser, useIsGuest } from "@/custom-hooks/useIsGuest";
 import { useLogout } from "@/custom-hooks/useLogout";
@@ -186,6 +187,8 @@ function HomeSection() {
   });
   const locationName = profileData?.data?.address?.trim() ?? "";
   const [openBroadcast, setOpenBroadcast] = useState(false);
+  const [logoutModal, setLogoutModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const broadcastRef = useRef<HTMLDivElement>(null);
   const tabsComponents: { [key: string]: React.ReactNode } = {
     products: <></>,
@@ -294,9 +297,7 @@ function HomeSection() {
           ) : isLoggedIn ? (
             <button
               type="button"
-              onClick={() => {
-                void signOut().then(() => router.push("/signin"));
-              }}
+              onClick={() => setLogoutModal(true)}
               className="shrink-0 cursor-pointer text-[14px] font-semibold text-[#001907] underline sm:text-[15px]"
             >
               {placeholders.logout}
@@ -403,6 +404,28 @@ function HomeSection() {
             />
           </div>
 
+      <ConfirmModal
+        open={logoutModal}
+        setOpen={setLogoutModal}
+        title={placeholders.logout}
+        message={
+          placeholders[
+            "logout_confirm_message" as keyof typeof placeholders
+          ] ?? "Are you sure you want to log out?"
+        }
+        confirmLabel={placeholders.logout}
+        loading={isLoggingOut}
+        destructive
+        onConfirm={() => {
+          setIsLoggingOut(true);
+          void signOut()
+            .then(() => router.push("/signin"))
+            .finally(() => {
+              setIsLoggingOut(false);
+              setLogoutModal(false);
+            });
+        }}
+      />
           <Modal
             editModalRef={broadcastRef}
             open={openBroadcast}

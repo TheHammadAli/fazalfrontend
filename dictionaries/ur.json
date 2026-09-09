@@ -203,6 +203,7 @@
         "are_you_sure_you_want_to_delete_your_account": "کیا آپ واقعی اپنا اکاؤنٹ حذف کرنا چاہتے ہیں؟ یہ عمل واپس نہیں لیا جا سکتا۔",
         "about_market": "مارکیٹ کے بارے میں",
         "logout": "لاگ آؤٹ",
+        "logout_confirm_message": "کیا آپ واقعی لاگ آؤٹ کرنا چاہتے ہیں؟",
         "profile": "پروفائل",
         "add_photo": "تصویر شامل کریں",
         "firstname": "پہلا نام",
