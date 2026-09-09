@@ -92,7 +92,16 @@ function LocationSelect({
       if (!term) return initialOptions;
       return initialOptions.filter((o) => o.name.toLowerCase().includes(term));
     }
-    const predictions = (data as ApiPrediction[] | undefined) ?? [];
+    // Responses come wrapped as { success, message, data, ... }, so the
+    // predictions are one level in. Reading the envelope as an array crashed
+    // the page on the first keystroke. Falling back to a bare array keeps it
+    // working if the endpoint is ever unwrapped.
+    const envelope = data as { data?: ApiPrediction[] } | ApiPrediction[] | undefined;
+    const predictions = Array.isArray(envelope)
+      ? envelope
+      : Array.isArray(envelope?.data)
+        ? envelope.data
+        : [];
     return predictions.map((p) => ({
       name: p.mainText ?? p.description ?? "",
       subtitle: p.description,
