@@ -92,7 +92,14 @@ function CreateShop() {
     useState<ShopSubcategory | null>(null);
   const [subcategoryError, setSubcategoryError] = useState("");
 
-  const { data: categoriesData } = useCategoriesQuery({ type: "product" });
+  // Shops have their own category type now. Until an admin has created some,
+  // fall back to the product categories shops were always classified with, so
+  // a shop can still be created the day this ships.
+  const { data: shopCategoriesData } = useCategoriesQuery({ type: "shop" });
+  const { data: productCategoriesData } = useCategoriesQuery({ type: "product" });
+  const shopCategoryList = (shopCategoriesData?.data as unknown[] | undefined) ?? [];
+  const categoriesData =
+    shopCategoryList.length > 0 ? shopCategoriesData : productCategoriesData;
 
   const {
     data: locationsData,
