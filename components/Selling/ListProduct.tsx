@@ -12,7 +12,7 @@ import Modal from "../Ui/Modals/Modal";
 import DoodleButton from "@/components/Ui/DoodleButton";
 import CategoryModal, {
   categroyTypes,
-  type CategoryParameters,
+  mapCategoryParametersToListingParameters,
 } from "../Services/CategoryModal";
 import PriceModal, { priceTypes } from "../Services/PriceModal";
 import {
@@ -21,7 +21,12 @@ import {
 } from "@/store/services/sellingService";
 import toast from "react-hot-toast";
 import ServiceCreated from "../Services/ServiceCreated";
-import { parameterTypes, hasDuplicateParameterNames, toApiParameters } from "./ParametersModal";
+import {
+  parameterTypes,
+  hasDuplicateParameterNames,
+  isParameterSatisfied,
+  toApiParameters,
+} from "./ParametersModal";
 import ParametersModal from "./ParametersModal";
 import ParameterTags from "./ParameterTags";
 import { useSearchParams } from "next/navigation";
@@ -57,47 +62,8 @@ function toPointLocation(location: Location) {
   };
 }
 
-function mapCategoryParametersToProductParameters(
-  parameters: CategoryParameters | undefined,
-  lang: string,
-): parameterTypes[] {
-  if (!parameters) return [];
-
-  const entries =
-    ((lang === "ur" ? parameters.ur : parameters.en) ??
-      parameters.en ??
-      parameters.ur ??
-      []) as Array<{ name?: string; values?: string[] } | string>;
-
-  const mapped: parameterTypes[] = [];
-
-  for (const entry of entries) {
-    if (typeof entry === "string") {
-      const name = entry.trim();
-      if (name) mapped.push({ name, variants: [], options: [], isCustom: false });
-      continue;
-    }
-
-    const name = entry?.name?.trim() ?? "";
-    if (!name) continue;
-
-    const variants = Array.isArray(entry?.values)
-      ? entry.values.map((value) => String(value).trim()).filter(Boolean)
-      : [];
-
-    mapped.push({
-      name,
-      variants: [],
-      options: [...variants],
-      isCustom: false,
-    });
-  }
-
-  return mapped;
-}
-
 function hasMissingParameterValues(parameters: parameterTypes[]): boolean {
-  return parameters.some((parameter) => parameter.variants.length === 0);
+  return parameters.some((parameter) => !isParameterSatisfied(parameter));
 }
 
 function ListProduct() {
@@ -272,7 +238,7 @@ function ListProduct() {
     }
 
     setParameters(
-      mapCategoryParametersToProductParameters(
+      mapCategoryParametersToListingParameters(
         selectedCategory.parameters,
         currentLanguage,
       ),
@@ -355,8 +321,12 @@ function ListProduct() {
         formData.append("city", city.trim());
         formData.append("area", area.trim());
       }
-      if (parameters.length > 0) {
-        formData.append("parameters", JSON.stringify(toApiParameters(parameters)));
+      // A dependent parameter with nothing configured for the chosen parent
+      // value counts as satisfied (see isParameterSatisfied) but has no
+      // variant to report — drop it rather than send an empty one.
+      const filledParameters = parameters.filter((p) => p.variants.length > 0);
+      if (filledParameters.length > 0) {
+        formData.append("parameters", JSON.stringify(toApiParameters(filledParameters)));
       }
 
       if (images.length > 0) {
@@ -606,6 +576,7 @@ function ListProduct() {
                 <ParameterTags
                   label={parameters.length > 0 ? placeholders.add_more : placeholders.add_parameter}
                   parameters={parameters}
+                  lockedHint={placeholders.choose_parameter_first}
                   onClick={(parameterIndex) => {
                     setParametersEditIndex(parameterIndex);
                     setIsParametersModalOpen(true);

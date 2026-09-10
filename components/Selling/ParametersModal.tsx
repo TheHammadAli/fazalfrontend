@@ -12,13 +12,40 @@ export type parameterTypes = {
   name: string;
   /** Selected values */
   variants: string[];
-  /** Backend/category options for list select/deselect. */
+  /** Backend/category options for list select/deselect. On a dependent
+   *  parameter (see `dependsOnIndex`) this is only ever what the parent's
+   *  CURRENT selection resolves to — recomputed by `cascadeParameterDependents`
+   *  whenever the parent's value changes, never edited directly here. */
   options?: string[];
   /** Single custom value added via Other in the list modal. */
   otherValue?: string;
   /** True for user-added "Add more" params (tags UI). False/undefined for mapped category params. */
   isCustom?: boolean;
+  /** Index, within this SAME `parameters` array, of the parameter whose
+   *  chosen value narrows this one's `options`. Set only on a category-mapped
+   *  parameter that the category defines as dependent — never on a
+   *  user-added ("Add more") one. Immutable metadata: carried through
+   *  unchanged by every helper below, never derived from user input. */
+  dependsOnIndex?: number;
+  /** This parameter's own value keys, parallel to `options`/`values` — used
+   *  by whichever LATER parameter depends on this one to look up its bucket
+   *  in that parameter's `valuesByParent`. */
+  valueKeys?: string[];
+  /** Present only when `dependsOnIndex` is set: parent value key -> this
+   *  parameter's options under that parent value. */
+  valuesByParent?: Record<string, string[]>;
 };
+
+/** Fields set once at seed/hydrate time from the category definition, never
+ *  touched by anything the seller does inside this modal — carried through
+ *  unconditionally everywhere a parameter is copied or rebuilt below. */
+function dependencyFields(p: Pick<parameterTypes, "dependsOnIndex" | "valueKeys" | "valuesByParent">) {
+  return {
+    ...(p.dependsOnIndex !== undefined ? { dependsOnIndex: p.dependsOnIndex } : {}),
+    ...(p.valueKeys ? { valueKeys: p.valueKeys } : {}),
+    ...(p.valuesByParent ? { valuesByParent: p.valuesByParent } : {}),
+  };
+}
 
 type ParametersModalProps = {
   open: boolean;
@@ -56,6 +83,7 @@ function normalizeDraft(items: parameterTypes[]): parameterTypes[] {
       ...(options ? { options } : {}),
       ...(validOther ? { otherValue: validOther } : {}),
       ...(p.isCustom ? { isCustom: true } : { isCustom: false }),
+      ...dependencyFields(p),
     };
   });
 }
@@ -91,8 +119,77 @@ function sanitizeParameters(items: parameterTypes[]): parameterTypes[] {
       ...(!p.isCustom && p.otherValue?.trim()
         ? { otherValue: p.otherValue.trim() }
         : {}),
+      ...dependencyFields(p),
     }))
     .filter((p) => p.name !== "");
+}
+
+/**
+ * After the parameter at `changedIndex` gets a new value, recomputes every
+ * parameter that (directly) depends on it: a fresh option list, and its own
+ * selected value cleared only when that value is no longer among the new
+ * options — re-confirming the same parent value must not disturb an
+ * already-chosen child.
+ *
+ * A single left-to-right sweep, not a queue: `dependsOnIndex` can only point
+ * at an earlier index (enforced when the category was saved), so by the time
+ * this reaches parameter i, everything it could depend on has already been
+ * resolved earlier in this same pass — which is what makes a 3+ level chain
+ * (Variant depending on Model depending on Make) propagate correctly from one
+ * call.
+ */
+export function cascadeParameterDependents(
+  parameters: parameterTypes[],
+  changedIndex: number,
+): parameterTypes[] {
+  const next = [...parameters];
+
+  for (let i = changedIndex + 1; i < next.length; i++) {
+    const entry = next[i];
+    if (entry.dependsOnIndex === undefined) continue;
+
+    const parent = next[entry.dependsOnIndex];
+    const parentValue = parent?.variants[0];
+    const parentOptionIndex = parentValue ? (parent.options ?? []).indexOf(parentValue) : -1;
+    const parentKey = parentOptionIndex >= 0 ? parent?.valueKeys?.[parentOptionIndex] : undefined;
+    const newOptions = parentKey ? entry.valuesByParent?.[parentKey] ?? [] : [];
+
+    const previousOptions = entry.options ?? [];
+    const unchanged =
+      newOptions.length === previousOptions.length &&
+      newOptions.every((value, index) => value === previousOptions[index]);
+    if (unchanged) continue;
+
+    const stillValid = entry.variants.every((value) => newOptions.includes(value));
+    next[i] = {
+      ...entry,
+      options: newOptions,
+      ...(stillValid ? {} : { variants: [], otherValue: undefined }),
+    };
+  }
+
+  return next;
+}
+
+/**
+ * A parameter with nothing selected normally blocks submit — but not a
+ * dependent parameter whose parent IS chosen and which simply has no options
+ * configured for that parent value. There's nothing for the seller to fill
+ * in there; that's a gap in the category's own data, not an incomplete form.
+ */
+export function isParameterSatisfied(parameter: parameterTypes): boolean {
+  if (parameter.variants.length > 0) return true;
+  return parameter.dependsOnIndex !== undefined && (parameter.options?.length ?? 0) === 0;
+}
+
+/** A dependent parameter is locked until its parent has a value — nothing to
+ *  pick yet, so the row shouldn't open the modal at all. */
+export function isParameterLocked(parameter: parameterTypes): boolean {
+  return (
+    parameter.dependsOnIndex !== undefined &&
+    parameter.variants.length === 0 &&
+    (parameter.options?.length ?? 0) === 0
+  );
 }
 
 export function hasDuplicateParameterNames(items: parameterTypes[]): boolean {
@@ -483,11 +580,21 @@ function ParametersModal({
               : editing?.otherValue
                 ? { otherValue: editing.otherValue }
                 : {}),
+            // `cleaned` went through sanitizeParameters, which already carries
+            // these through — re-asserted from `editing` here too, since this
+            // entry's own dependency metadata never changes by being edited
+            // and must survive even if a future edit to sanitize/normalize
+            // ever narrows what it keeps.
+            ...dependencyFields(editing ?? {}),
           }
           : parameter,
       );
-      setParameters(updated);
-      advanceOrClose(updated);
+      // Cascades forward: a parameter further down the list may depend on the
+      // one just confirmed (directly, or transitively through another
+      // dependent parameter in between).
+      const cascaded = cascadeParameterDependents(updated, editIndex!);
+      setParameters(cascaded);
+      advanceOrClose(cascaded);
       return;
     }
 

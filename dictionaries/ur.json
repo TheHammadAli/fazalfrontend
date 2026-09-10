@@ -10,6 +10,7 @@
         "search_city": "شہر تلاش کریں...",
         "search_area": "علاقہ تلاش کریں...",
         "choose_city_first": "پہلے شہر منتخب کریں",
+        "choose_parameter_first": "پہلے {name} منتخب کریں",
         "you_offered_a_new_time": "آپ نے نیا وقت پیش کیا",
         "hour": "ساعت",
         "your_address": "آپ کا پتہ",

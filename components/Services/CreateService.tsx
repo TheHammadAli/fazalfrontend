@@ -18,7 +18,12 @@ import CategoryModal, {
   mapCategoryParametersToListingParameters,
 } from "./CategoryModal";
 import PriceModal, { priceTypes } from "./PriceModal";
-import { parameterTypes, hasDuplicateParameterNames, toApiParameters } from "../Selling/ParametersModal";
+import {
+  parameterTypes,
+  hasDuplicateParameterNames,
+  isParameterSatisfied,
+  toApiParameters,
+} from "../Selling/ParametersModal";
 import ParametersModal from "../Selling/ParametersModal";
 import ParameterTags from "../Selling/ParameterTags";
 import {
@@ -116,7 +121,7 @@ function CreateService() {
     if (parameters.length === 0) {
       setParameterError(error_messages.parameter_required);
     }
-    if (parameters.some((parameter) => parameter.variants.length === 0)) {
+    if (parameters.some((parameter) => !isParameterSatisfied(parameter))) {
       setParameterError(error_messages.parameter_value_required);
     }
     if (hasDuplicateParameterNames(parameters)) {
@@ -150,8 +155,12 @@ function CreateService() {
       formData.append("category", selectedCategory._id);
       formData.append("price", selectedPrice.price);
       formData.append("paymentType", selectedPrice.paymentType);
-      if (parameters.length > 0) {
-        formData.append("parameters", JSON.stringify(toApiParameters(parameters)));
+      // A dependent parameter with nothing configured for the chosen parent
+      // value counts as satisfied but has no variant to report — drop it
+      // rather than send an empty one.
+      const filledParameters = parameters.filter((p) => p.variants.length > 0);
+      if (filledParameters.length > 0) {
+        formData.append("parameters", JSON.stringify(toApiParameters(filledParameters)));
       }
       if (video !== null) {
         formData.append("video", video);
@@ -412,6 +421,7 @@ function CreateService() {
                 <ParameterTags
                   label={parameters.length > 0 ? placeholders.add_more : placeholders.add_parameter}
                   parameters={parameters}
+                  lockedHint={placeholders.choose_parameter_first}
                   onClick={(parameterIndex) => {
                     setParametersEditIndex(parameterIndex);
                     setIsParametersModalOpen(true);

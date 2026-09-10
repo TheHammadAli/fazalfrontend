@@ -10,6 +10,7 @@
         "search_city": "Search city...",
         "search_area": "Search area...",
         "choose_city_first": "Choose a city first",
+        "choose_parameter_first": "Choose {name} first",
         "notifications.order_created_seller": "You have received a new order",
         "notifications.order_created_buyer": "Your order has been placed successfully",
         "notifications.New service request for": "",

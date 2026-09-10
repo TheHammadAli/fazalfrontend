@@ -21,7 +21,12 @@ import {
   useUpdateProductMutation,
 } from "@/store/services/sellingService";
 import toast from "react-hot-toast";
-import { parameterTypes, hasDuplicateParameterNames, toApiParameters } from "./ParametersModal";
+import {
+  parameterTypes,
+  hasDuplicateParameterNames,
+  isParameterSatisfied,
+  toApiParameters,
+} from "./ParametersModal";
 import ParametersModal from "./ParametersModal";
 import ParameterTags from "./ParameterTags";
 import { useSearchParams } from "next/navigation";
@@ -157,7 +162,7 @@ function UpdateProduct() {
     if (parameters.length === 0) {
       setParameterError(error_messages.parameter_required);
     }
-    if (parameters.some((parameter) => parameter.variants.length === 0)) {
+    if (parameters.some((parameter) => !isParameterSatisfied(parameter))) {
       setParameterError(error_messages.parameter_value_required);
     }
     if (hasDuplicateParameterNames(parameters)) {
@@ -182,7 +187,7 @@ function UpdateProduct() {
       //  &&
       images?.length > 0 &&
       parameters.length > 0 &&
-      parameters.every((parameter) => parameter.variants.length > 0) &&
+      parameters.every((parameter) => isParameterSatisfied(parameter)) &&
       !hasDuplicateParameterNames(parameters)
     ) {
       const formData = new FormData();
@@ -194,8 +199,12 @@ function UpdateProduct() {
       if (video && typeof video !== "string") {
         formData.append("video", video);
       }
-      if (parameters.length > 0) {
-        formData.append("parameters", JSON.stringify(toApiParameters(parameters)));
+      // A dependent parameter with nothing configured for the chosen parent
+      // value counts as satisfied but has no variant to report — drop it
+      // rather than send an empty one.
+      const filledParameters = parameters.filter((p) => p.variants.length > 0);
+      if (filledParameters.length > 0) {
+        formData.append("parameters", JSON.stringify(toApiParameters(filledParameters)));
       }
       if (images.length > 0) {
         for (let i = 0; i < images.length; i++) {
@@ -524,6 +533,7 @@ function UpdateProduct() {
                       : placeholders.add_parameter
                   }
                   parameters={parameters}
+                  lockedHint={placeholders.choose_parameter_first}
                   onClick={(parameterIndex) => {
                     setParametersEditIndex(parameterIndex);
                     setIsParametersModalOpen(true);

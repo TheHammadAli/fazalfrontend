@@ -3,13 +3,15 @@
 import Image from "next/image";
 import chevron from "@/assets/icons/chev-down-icon.svg";
 import plusIcon from "@/assets/icons/green-plus-icon.svg";
-import type { parameterTypes } from "./ParametersModal";
+import { isParameterLocked, type parameterTypes } from "./ParametersModal";
 
 type ParameterTagsProps = {
   label: string;
   parameters: parameterTypes[];
   /** Called with the parameter index, or `null` for the add button. */
   onClick: (parameterIndex: number | null) => void;
+  /** "Choose {name} first" — {name} is replaced with the parent's name. */
+  lockedHint?: string;
 };
 
 export function removeParameterVariant(
@@ -28,7 +30,7 @@ export function removeParameterVariant(
     .filter((parameter) => parameter.variants.length > 0);
 }
 
-function ParameterTags({ label, parameters, onClick }: ParameterTagsProps) {
+function ParameterTags({ label, parameters, onClick, lockedHint }: ParameterTagsProps) {
   const listedParameters = parameters
     .map((parameter, index) => ({ parameter, index }))
     .filter(
@@ -53,28 +55,51 @@ function ParameterTags({ label, parameters, onClick }: ParameterTagsProps) {
 
   return (
     <>
-      {listedParameters.map(({ parameter, index }) => (
-        <button
-          key={`${parameter.name}-${index}`}
-          type="button"
-          onClick={() => onClick(index)}
-          className="flex w-full h-[50px] cursor-pointer items-center justify-between border-b border-gray-9 bg-white px-4 text-left"
-        >
-          <h3 className="text-[15px] font-medium text-black-1 shrink-0">
-            {parameter.name}
-          </h3>
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="truncate text-[15px] font-normal text-gray-8">
-              {parameter.variants.join(", ")}
-            </span>
-            <Image
-              src={chevron}
-              alt=""
-              className="-rotate-90 rtl:rotate-90 w-4 shrink-0"
-            />
-          </div>
-        </button>
-      ))}
+      {listedParameters.map(({ parameter, index }) => {
+        // A dependent parameter (e.g. Model, waiting on Make) has nothing to
+        // pick until its parent has a value — same idea as "choose a city
+        // first" on the area field.
+        const locked = isParameterLocked(parameter);
+        const parent = locked ? parameters[parameter.dependsOnIndex!] : undefined;
+        const hint = locked
+          ? (lockedHint ?? "Choose {name} first").replace(
+              "{name}",
+              parent?.name || label,
+            )
+          : undefined;
+
+        return (
+          <button
+            key={`${parameter.name}-${index}`}
+            type="button"
+            disabled={locked}
+            onClick={() => onClick(index)}
+            className={`flex w-full h-[50px] items-center justify-between border-b border-gray-9 bg-white px-4 text-left ${
+              locked ? "cursor-not-allowed" : "cursor-pointer"
+            }`}
+          >
+            <h3
+              className={`text-[15px] font-medium shrink-0 ${locked ? "text-gray-8" : "text-black-1"}`}
+            >
+              {parameter.name}
+            </h3>
+            <div className="flex min-w-0 items-center gap-2">
+              <span
+                className={`truncate text-[15px] font-normal ${locked ? "italic text-gray-9" : "text-gray-8"}`}
+              >
+                {locked ? hint : parameter.variants.join(", ")}
+              </span>
+              {locked ? null : (
+                <Image
+                  src={chevron}
+                  alt=""
+                  className="-rotate-90 rtl:rotate-90 w-4 shrink-0"
+                />
+              )}
+            </div>
+          </button>
+        );
+      })}
 
       <div className="border-b border-gray-9">
         <button

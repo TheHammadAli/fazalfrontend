@@ -6,10 +6,21 @@ import { useCategoriesQuery } from "@/custom-hooks/useCategoriesQuery";
 import chevron from "@/assets/icons/chev-down-icon.svg";
 import CategoriesSkeleton from "./CategoriesSkeleton";
 import { getFeedCategoryLabel } from "@/utils/getFeedCategoryLabel";
+import type { parameterTypes } from "@/components/Selling/ParametersModal";
 
 export type CategoryParameterEntry = {
   name: string;
   values: string[];
+  /** Name of an earlier entry in the SAME locale array whose chosen value
+   *  narrows this one's options. */
+  dependsOn?: string;
+  /** Stable ids parallel to `values` — what a later, dependent entry
+   *  addresses this one's values by. */
+  valueKeys?: string[];
+  /** Present when `dependsOn` is set: parent value key -> this entry's
+   *  values under that parent value. `values` is always the flattened union
+   *  of these, kept for a client that has never heard of `dependsOn`. */
+  valuesByParent?: Record<string, string[]>;
 };
 
 export type CategoryParameters = {
@@ -59,7 +70,29 @@ export function getCategoryParameterEntries(
         ? entry.values.map((value) => String(value).trim()).filter(Boolean)
         : [];
 
-      return { name, values };
+      const dependsOn =
+        typeof entry?.dependsOn === "string" && entry.dependsOn.trim()
+          ? entry.dependsOn.trim()
+          : undefined;
+      const valueKeys =
+        Array.isArray(entry?.valueKeys) &&
+        entry.valueKeys.every((key) => typeof key === "string")
+          ? entry.valueKeys
+          : undefined;
+      const valuesByParent =
+        entry?.valuesByParent &&
+        typeof entry.valuesByParent === "object" &&
+        !Array.isArray(entry.valuesByParent)
+          ? entry.valuesByParent
+          : undefined;
+
+      return {
+        name,
+        values,
+        ...(dependsOn ? { dependsOn } : {}),
+        ...(valueKeys ? { valueKeys } : {}),
+        ...(valuesByParent ? { valuesByParent } : {}),
+      };
     })
     .filter((entry): entry is CategoryParameterEntry => entry != null);
 }
@@ -67,28 +100,49 @@ export function getCategoryParameterEntries(
 export function mapCategoryParametersToListingParameters(
   parameters: CategoryParameters | undefined,
   lang: string,
-): { name: string; variants: string[]; options: string[]; isCustom: false }[] {
-  return getCategoryParameterEntries(parameters, lang).map((entry) => ({
-    name: entry.name,
-    variants: [],
-    options: [...entry.values],
-    isCustom: false,
-  }));
+): parameterTypes[] {
+  const entries = getCategoryParameterEntries(parameters, lang);
+  const nameToIndex = new Map(entries.map((entry, index) => [entry.name, index]));
+
+  return entries.map((entry) => {
+    const dependsOnIndex = entry.dependsOn ? nameToIndex.get(entry.dependsOn) : undefined;
+    const isDependent = dependsOnIndex !== undefined;
+
+    return {
+      name: entry.name,
+      variants: [],
+      // A dependent parameter starts with nothing to pick until its parent
+      // is chosen — the locked-row UI is what keeps it from being opened
+      // before then.
+      options: isDependent ? [] : [...entry.values],
+      isCustom: false,
+      ...(isDependent ? { dependsOnIndex } : {}),
+      ...(entry.valueKeys ? { valueKeys: entry.valueKeys } : {}),
+      ...(entry.valuesByParent ? { valuesByParent: entry.valuesByParent } : {}),
+    };
+  });
 }
 
-/** Keep API listing params; attach category options so mapped params use the list modal. */
+/**
+ * Rebuilds a saved listing's parameter list against its category's CURRENT
+ * definition — for editing an existing product/service.
+ *
+ * Walks the category's own entries in order (parent before child, always —
+ * `dependsOn` can only name an earlier entry), resolving each dependent
+ * entry's options from its parent's SAVED value rather than seeding empty.
+ * A saved value that no longer fits (the category changed since, or the
+ * parent's value it depended on is now something else) is kept, not cleared —
+ * opening a listing must never silently mutate it. Any saved parameter with
+ * no match in the category at all (renamed, removed, or added by hand before
+ * categories carried this shape) is still shown, exactly as before.
+ */
 export function hydrateListingParametersFromApi(
   apiParameters:
     | Array<{ name?: string; variants?: string[] }>
     | undefined,
   category: categroyTypes | null | undefined,
   lang: string,
-): {
-  name: string;
-  variants: string[];
-  options?: string[];
-  isCustom: boolean;
-}[] {
+): parameterTypes[] {
   const api = (apiParameters ?? [])
     .map((p) => ({
       name: (p.name ?? "").trim(),
@@ -100,61 +154,67 @@ export function hydrateListingParametersFromApi(
 
   if (api.length === 0) return [];
 
-  const enEntries = mapCategoryParametersToListingParameters(
-    category?.parameters,
-    "en",
-  );
-  const urEntries = mapCategoryParametersToListingParameters(
-    category?.parameters,
-    "ur",
-  );
-  const preferredEntries =
-    lang === "ur"
-      ? urEntries.length > 0
-        ? urEntries
-        : enEntries
-      : enEntries.length > 0
-        ? enEntries
-        : urEntries;
+  const sameLangEntries = getCategoryParameterEntries(category?.parameters, lang);
+  const otherLang = lang === "ur" ? "en" : "ur";
+  const entries =
+    sameLangEntries.length > 0
+      ? sameLangEntries
+      : getCategoryParameterEntries(category?.parameters, otherLang);
 
-  const categoryByName = new Map<string, (typeof preferredEntries)[number]>();
-  const pairCount = Math.max(enEntries.length, urEntries.length);
-  for (let i = 0; i < pairCount; i++) {
-    const preferred = preferredEntries[i] ?? enEntries[i] ?? urEntries[i];
-    if (!preferred) continue;
-    const enName = enEntries[i]?.name?.trim().toLowerCase();
-    const urName = urEntries[i]?.name?.trim().toLowerCase();
-    if (enName) categoryByName.set(enName, preferred);
-    if (urName) categoryByName.set(urName, preferred);
-  }
+  const nameToIndex = new Map(entries.map((entry, index) => [entry.name.toLowerCase(), index]));
+  const savedByName = new Map(api.map((p) => [p.name.toLowerCase(), p]));
+  const savedValueByIndex = new Map<number, string | undefined>();
 
-  return api.map((p) => {
-    const match = categoryByName.get(p.name.toLowerCase());
-    // Listing params allow a single selected value
-    const selected = p.variants.slice(0, 1);
-    if (match) {
-      const options = [...(match.options ?? [])];
-      const otherValue =
-        selected[0] && !options.includes(selected[0])
-          ? selected[0]
-          : undefined;
-      return {
-        name: match.name || p.name,
-        variants: selected,
-        options,
-        ...(otherValue ? { otherValue } : {}),
-        isCustom: false,
-      };
+  const results: parameterTypes[] = entries.map((entry, index) => {
+    const saved = savedByName.get(entry.name.toLowerCase());
+    const selected = saved?.variants.slice(0, 1) ?? [];
+    savedValueByIndex.set(index, selected[0]);
+
+    const dependsOnIndex = entry.dependsOn
+      ? nameToIndex.get(entry.dependsOn.toLowerCase())
+      : undefined;
+
+    let options: string[];
+    if (dependsOnIndex === undefined) {
+      options = [...entry.values];
+    } else {
+      const parentEntry = entries[dependsOnIndex];
+      const parentValue = savedValueByIndex.get(dependsOnIndex);
+      const parentOptionIndex = parentValue ? parentEntry.values.indexOf(parentValue) : -1;
+      const parentKey =
+        parentOptionIndex >= 0 ? parentEntry.valueKeys?.[parentOptionIndex] : undefined;
+      options = parentKey ? entry.valuesByParent?.[parentKey] ?? [] : [];
     }
 
+    const otherValue =
+      selected[0] && !options.includes(selected[0]) ? selected[0] : undefined;
+
     return {
+      name: entry.name,
+      variants: selected,
+      options,
+      isCustom: false,
+      ...(otherValue ? { otherValue } : {}),
+      ...(dependsOnIndex !== undefined ? { dependsOnIndex } : {}),
+      ...(entry.valueKeys ? { valueKeys: entry.valueKeys } : {}),
+      ...(entry.valuesByParent ? { valuesByParent: entry.valuesByParent } : {}),
+    };
+  });
+
+  const matchedNames = new Set(entries.map((entry) => entry.name.toLowerCase()));
+  for (const p of api) {
+    if (matchedNames.has(p.name.toLowerCase())) continue;
+    const selected = p.variants.slice(0, 1);
+    results.push({
       name: p.name,
       variants: selected,
       options: [],
-      ...(selected[0] ? { otherValue: selected[0] } : {}),
       isCustom: false,
-    };
-  });
+      ...(selected[0] ? { otherValue: selected[0] } : {}),
+    });
+  }
+
+  return results;
 }
 
 function CategoryModal({
