@@ -566,15 +566,11 @@ function OfferedServices() {
                 <OfferedServicesPageSkeleton />
             ) : (
             <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col">
-                <div className="w-full shrink-0 px-0 pb-4 pt-3 sm:pt-4">
-                    {hasMyService && myService && (
+                {hasMyService && myService && (
+                    <div className="w-full shrink-0 px-0 pb-4 pt-3 sm:pt-4">
                         <MyOfferedServiceCard serviceData={myService} />
-                    )}
-                    {/* Not gated on hasMyService — a provider can post any
-                        number of these even without a real service, so this
-                        must stay reachable either way. */}
-                    <MyServiceVideosList />
-                </div>
+                    </div>
+                )}
                 <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col lg:max-h-[calc(115dvh-210px)] lg:flex-row">
                 <div className="flex w-full shrink-0 flex-col border-b border-gray-9 bg-white px-3 pb-3 pt-3 sm:px-4 sm:pt-4 lg:min-h-0 lg:w-[min(340px,100%)] lg:max-w-full lg:overflow-y-auto lg:border-b-0 lg:border-r">
                     <div className="flex flex-col gap-3">
@@ -827,6 +823,13 @@ function OfferedServices() {
                         )}
                     </div>
                 </div>
+                </div>
+                {/* Not gated on hasMyService — a provider can post any number
+                    of these even without a real service, so this must stay
+                    reachable either way. Placed last: it's a secondary,
+                    promotional feature, not the main content of this tab. */}
+                <div className="w-full shrink-0 px-3 pb-4 pt-3 sm:px-4 sm:pt-4">
+                    <MyServiceVideosList />
                 </div>
             </div>
             )}

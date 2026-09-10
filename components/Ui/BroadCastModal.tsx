@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import chevDown from "@/assets/icons/chev-down-icon.svg";
 import crossIcon from "@/assets/icons/cross-icon.svg";
 import chooseLocationIcon from "@/assets/icons/choose-location-icon.svg";
@@ -21,6 +21,7 @@ import ChooseImagesTab from "@/components/Services/ChooseImagesTab";
 import DoodleButton from "@/components/Ui/DoodleButton";
 import LocationSelect, { type LocationCoordinates } from "@/components/Ui/LocationSelect";
 import { PAKISTAN_CITY_OPTIONS } from "@/assets/content/locations";
+import { useGetCityAreasQuery } from "@/store/services/authService";
 import { createPortal } from "react-dom";
 
 type CategoryItem = {
@@ -129,6 +130,38 @@ function BroadCastModal({ setOpenBroadcast }: { setOpenBroadcast: (open: boolean
     const [city, setCity] = useState("");
     const [area, setArea] = useState("");
     const [cityCoordinates, setCityCoordinates] = useState<LocationCoordinates>(null);
+
+    // The chosen city's areas, so the Area field has something to show before
+    // anything is typed — same as CreateShop.tsx's cityAreaOptions. Google
+    // will not enumerate a city's neighbourhoods on its own, so the backend
+    // assembles this list; it's cached per city by the query layer.
+    const { data: cityAreasData } = useGetCityAreasQuery(
+        {
+            city,
+            ...(cityCoordinates
+                ? { lat: String(cityCoordinates.lat), lng: String(cityCoordinates.lng) }
+                : {}),
+        },
+        { skip: !city },
+    );
+    const cityAreaOptions = useMemo(() => {
+        const rows =
+            (
+                cityAreasData as
+                    | { data?: { name?: string; mainText?: string; description?: string }[] }
+                    | undefined
+            )?.data ?? [];
+        // `name` is what the field stores — "Faisal Hills", not
+        // "Faisal Hills, Taxila". mainText is the older shape, kept as a fallback.
+        return rows
+            .map((row) => ({
+                name: row.name ?? row.mainText ?? row.description ?? "",
+                subtitle: row.description,
+                coordinates: null,
+            }))
+            .filter((option) => option.name);
+    }, [cityAreasData]);
+
     const { data: categories, isLoading: isCategoriesLoading, isFetching: isCategoriesFetching } =
         useCategoriesQuery(
             { type: selectedType ?? undefined },
@@ -373,6 +406,7 @@ function BroadCastModal({ setOpenBroadcast }: { setOpenBroadcast: (open: boolean
                                         types="(regions)"
                                         city={city}
                                         near={cityCoordinates}
+                                        initialOptions={cityAreaOptions}
                                         allowCustom
                                         onSelect={(option) => {
                                             const description = `${option.name}, ${city}`;
