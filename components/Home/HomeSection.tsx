@@ -35,7 +35,12 @@ import DoodleButton from "../Ui/DoodleButton";
 import locationGrayIcon from "@/assets/icons/location-gray.svg";
 import chevronRightIcon from "@/assets/icons/chevron-right-icon.svg";
 import { useAppSelector } from "@/store/store";
-import { useGetUserDetailQuery } from "@/store/services/profileService";
+import {
+  useGetUserDetailQuery,
+  useUpdateProfileMutation,
+} from "@/store/services/profileService";
+import LocationPickerModal from "@/components/Ui/LocationPickerModal";
+import toast from "react-hot-toast";
 
 type HomeActionCardProps = {
   bgClass: string;
@@ -159,9 +164,19 @@ const FEATURED_PRODUCT_CATEGORY_IDS = [
   "6a4bbc2da60825502cafe903"
 ] as const;
 
-function UserLocationBadge({ locationName }: { locationName: string }) {
+function UserLocationBadge({
+  locationName,
+  onClick,
+}: {
+  locationName: string;
+  onClick?: () => void;
+}) {
   return (
-    <div className="flex h-[40px] min-w-0 flex-1 items-center gap-1.5 rounded-[8px] bg-[#EEF2F3] px-2.5 sm:h-[46px] sm:flex-none sm:w-[180px] sm:gap-2 sm:px-3">
+    <button
+      type="button"
+      onClick={onClick}
+      title={locationName}
+      className="flex h-[40px] min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-[8px] bg-[#EEF2F3] px-2.5 text-left transition-colors hover:bg-[#E2E8E9] sm:h-[46px] sm:flex-none sm:w-[180px] sm:gap-2 sm:px-3">
       <Image
         src={locationGrayIcon}
         alt=""
@@ -173,7 +188,7 @@ function UserLocationBadge({ locationName }: { locationName: string }) {
           {locationName}
         </p>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -186,6 +201,9 @@ function HomeSection() {
     skip: !userId || isGuest,
   });
   const locationName = profileData?.data?.address?.trim() ?? "";
+  const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
+  const [updateProfile] = useUpdateProfileMutation();
+  const savedCoordinates = profileData?.data?.location?.coordinates;
   const [openBroadcast, setOpenBroadcast] = useState(false);
   const [logoutModal, setLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -275,7 +293,10 @@ function HomeSection() {
             }`}
         >
           {isLoggedIn && locationName ? (
-            <UserLocationBadge locationName={locationName} />
+            <UserLocationBadge
+              locationName={locationName}
+              onClick={() => setIsLocationPickerOpen(true)}
+            />
           ) : null}
           {isGuest ? (
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -460,6 +481,50 @@ function HomeSection() {
       />
       <DownloadAppBanner />
       <HomeFooter />
+
+      <LocationPickerModal
+        open={isLocationPickerOpen}
+        onClose={() => setIsLocationPickerOpen(false)}
+        initial={
+          // Stored as GeoJSON — [lng, lat].
+          Array.isArray(savedCoordinates) && savedCoordinates.length === 2
+            ? {
+                description: locationName,
+                coordinates: {
+                  lng: Number(savedCoordinates[0]),
+                  lat: Number(savedCoordinates[1]),
+                },
+              }
+            : null
+        }
+        labels={{
+          title: placeholders.choose_location,
+          search: placeholders.search_country,
+          useCurrent: placeholders.use_current_location ?? "Use my current location",
+          confirm: placeholders.confirm,
+          cancel: placeholders.cancel,
+        }}
+        onConfirm={async (picked) => {
+          if (!userId) return;
+          // Saved straight to the profile, which is where this address comes
+          // from — so the badge and the profile page can never disagree.
+          const formData = new FormData();
+          formData.append("address", picked.description);
+          formData.append(
+            "location",
+            JSON.stringify({
+              type: "Point",
+              coordinates: [picked.coordinates.lng, picked.coordinates.lat],
+            }),
+          );
+          try {
+            await updateProfile({ formData, id: userId }).unwrap();
+            toast.success(placeholders.location_updated ?? "Location updated");
+          } catch {
+            toast.error(error_messages.something_went_wrong);
+          }
+        }}
+      />
 
     </div>
   );

@@ -6,6 +6,7 @@ import Image from "next/image";
 import toast from "react-hot-toast";
 import { useClickOutside } from "@/custom-hooks/useClickOutside";
 import locationIcon from "@/assets/icons/location-icon.svg";
+import LocationPickerModal from "@/components/Ui/LocationPickerModal";
 import { useGetLocationsQuery } from "@/store/services/authService";
 import { useDebounce } from "use-debounce";
 import dummyProfile from "@/assets/images/default-profile-avatar.svg";
@@ -55,6 +56,7 @@ function ProfileInfo({ toggle, setToggle }: ProfileInfoTypes) {
     useUpdateProfileMutation();
 
   const [locationError, setLocationError] = useState("");
+  const [isMapPickerOpen, setIsMapPickerOpen] = useState(false);
   const [localProfileFile, setLocalProfileFile] = useState<File | null>(null);
   const [locationSearch, setLocationSearch] = useState("");
   const [email, setEmail] = useState("");
@@ -88,9 +90,11 @@ function ProfileInfo({ toggle, setToggle }: ProfileInfoTypes) {
       setLocation(
         location
           ? {
+            // GeoJSON order is [lng, lat] — reading them the other way round
+            // meant opening the profile and saving moved the saved point.
             coordinates: {
-              lat: location?.coordinates?.[0],
-              lng: location.coordinates?.[1],
+              lng: location?.coordinates?.[0],
+              lat: location?.coordinates?.[1],
             },
             description: address,
             type: "Point",
@@ -442,16 +446,21 @@ function ProfileInfo({ toggle, setToggle }: ProfileInfoTypes) {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2 mt-1 w-full">
+          {/* This row was already here but did nothing — it now opens the map. */}
+          <button
+            type="button"
+            onClick={() => setIsMapPickerOpen(true)}
+            className="flex items-center gap-2 mt-1 w-full cursor-pointer"
+          >
             <Image
               src={locationIcon}
               className="h-[13px] w-[11px]"
-              alt="Country Flag"
+              alt=""
             />
-            <p className="text-[#030303] font-medium text-[14px] underline cursor-pointer">
+            <p className="text-[#030303] font-medium text-[14px] underline">
               {placeholders.choose_map_location}
             </p>
-          </div>
+          </button>
           <div className="flex justify-center sm:justify-start lg:justify-end">
             <DoodleButton
               type="submit"
@@ -466,6 +475,37 @@ function ProfileInfo({ toggle, setToggle }: ProfileInfoTypes) {
             </DoodleButton>
           </div>
         </form>
+      <LocationPickerModal
+        open={isMapPickerOpen}
+        onClose={() => setIsMapPickerOpen(false)}
+        initial={
+          location?.coordinates?.lat != null && location?.coordinates?.lng != null
+            ? {
+                description: location.description ?? "",
+                coordinates: {
+                  lat: location.coordinates.lat,
+                  lng: location.coordinates.lng,
+                },
+              }
+            : null
+        }
+        labels={{
+          title: placeholders.choose_location,
+          search: placeholders.search_country,
+          useCurrent: placeholders.use_current_location ?? "Use my current location",
+          confirm: placeholders.confirm,
+          cancel: placeholders.cancel,
+        }}
+        onConfirm={(picked) => {
+          setLocation({
+            type: "Point",
+            description: picked.description,
+            coordinates: picked.coordinates,
+          });
+          setLocationError("");
+        }}
+      />
+
       </div>
     </div>
   );

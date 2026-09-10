@@ -4,6 +4,7 @@
         "new_message_from": "New message from",
         "voice_message": "Voice message",
         "no_locations_found": "No locations found",
+        "location_updated": "Location updated",
         "choose_on_map": "Choose on map",
         "use_current_location": "Use my current location",
         "search_city": "Search city...",
