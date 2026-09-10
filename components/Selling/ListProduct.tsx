@@ -36,6 +36,7 @@ import LocationSelect, { type LocationCoordinates } from "@/components/Ui/Locati
 import LocationPickerModal from "@/components/Ui/LocationPickerModal";
 import { PAKISTAN_CITY_OPTIONS } from "@/assets/content/locations";
 import { useGetCityAreasQuery } from "@/store/services/authService";
+import { useCategoriesQuery } from "@/custom-hooks/useCategoriesQuery";
 
 type Location = {
   description?: string;
@@ -173,6 +174,58 @@ function ListProduct() {
   const listingContextLabel = isShopListing
     ? shop?.data?.title || placeholders.shop
     : placeholders.private_listing;
+
+  // A shop sells inside one category — an Electronics shop lists electronics,
+  // not furniture — so its listings don't get a free choice of category. The
+  // shop's own category replaces the picker.
+  const { data: productCategories, isFetching: isProductCategoriesFetching } =
+    useCategoriesQuery({ type: "product" }, { skip: !isShopListing });
+
+  const shopCategoryId: string =
+    shop?.data?.categoryId ||
+    shop?.data?.category?._id ||
+    shop?.data?.category?.id ||
+    "";
+
+  const lockedShopCategory = useMemo(() => {
+    if (!isShopListing || !shopCategoryId) return null;
+    // Resolved against the full list rather than taken from the shop, because
+    // the shop carries only {id, name} and the parameters below need the whole
+    // record. Coming up empty leaves the normal picker in place: the shop is
+    // then filed under something that isn't a product category, which is
+    // exactly the case the server also declines to enforce.
+    const list = (productCategories?.data ?? []) as categroyTypes[];
+    return (
+      list.find(
+        (category) =>
+          (category._id ?? (category as { id?: string }).id) === shopCategoryId,
+      ) ?? null
+    );
+  }, [isShopListing, shopCategoryId, productCategories?.data]);
+
+  const isCategoryLocked = lockedShopCategory !== null;
+  // Between the shop arriving and its category resolving, the picker would
+  // briefly accept a choice this form is about to overwrite. Hold it shut.
+  const isCategoryPending =
+    isShopListing &&
+    !!shopCategoryId &&
+    !lockedShopCategory &&
+    isProductCategoriesFetching;
+
+  const lockedCategoryLabel = lockedShopCategory
+    ? getFeedCategoryLabel(lockedShopCategory.name, currentLanguage)
+    : getFeedCategoryLabel(shop?.data?.category?.name, currentLanguage);
+
+  // The error handler below clears the form; on a shop listing the category is
+  // not the seller's to re-pick, so it is restored rather than blanked. Held in
+  // a ref so that handler keeps its own dependencies.
+  const lockedShopCategoryRef = useRef<categroyTypes | null>(null);
+  lockedShopCategoryRef.current = lockedShopCategory;
+
+  useEffect(() => {
+    if (!lockedShopCategory) return;
+    setSelectedCategory(lockedShopCategory);
+  }, [lockedShopCategory]);
 
   const isInitialCategoryRender = useRef(true);
 
@@ -331,7 +384,7 @@ function ListProduct() {
       return () => clearTimeout(timer);
     }
     if (isError && "data" in error) {
-      setSelectedCategory(null);
+      setSelectedCategory(lockedShopCategoryRef.current);
       setSelectedPrice({ paymentType: "fixed", price: "" });
       setImages([]);
       setVideo(null);
@@ -515,22 +568,36 @@ function ListProduct() {
                   <h3 className="text-[15px] font-medium text-black-1">
                     {placeholders.category}
                   </h3>
-                  <div
-                    className="flex items-center gap-2 cursor-pointer"
-                    onClick={() => setIsCatOpen(true)}
-                  >
+                  {isCategoryLocked || isCategoryPending ? (
                     <h4 className="text-[15px] font-normal text-gray-8 leading-none">
-                      {selectedCategory
-                        ? getFeedCategoryLabel(selectedCategory.name, currentLanguage)
-                        : placeholders.choose_category}
+                      {lockedCategoryLabel || placeholders.choose_category}
                     </h4>
-                    <Image
-                      src={chevron}
-                      alt="chevron"
-                      className="-rotate-90 rtl:rotate-90 w-4"
-                    />
-                  </div>
+                  ) : (
+                    <div
+                      className="flex items-center gap-2 cursor-pointer"
+                      onClick={() => setIsCatOpen(true)}
+                    >
+                      <h4 className="text-[15px] font-normal text-gray-8 leading-none">
+                        {selectedCategory
+                          ? getFeedCategoryLabel(selectedCategory.name, currentLanguage)
+                          : placeholders.choose_category}
+                      </h4>
+                      <Image
+                        src={chevron}
+                        alt="chevron"
+                        className="-rotate-90 rtl:rotate-90 w-4"
+                      />
+                    </div>
+                  )}
                 </div>
+                {isCategoryLocked && lockedCategoryLabel ? (
+                  <p className="px-4 pt-1 text-[13px] font-normal text-gray-8">
+                    {(
+                      info_messages.shop_category_locked ??
+                      "This shop lists {category} items only"
+                    ).replace("{category}", lockedCategoryLabel)}
+                  </p>
+                ) : null}
                 {categoryError && (
                   <p className="text-red-1 text-[14px] font-normal">
                     {categoryError}

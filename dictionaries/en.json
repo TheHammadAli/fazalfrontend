@@ -485,6 +485,7 @@
         "choose_subcategory": "Choose subcategory",
         "describe_shop": "Describe your shop",
         "describe_product": "Describe your product",
+        "shop_category_locked": "This shop lists {category} items only",
         "enter_shop": "Create shop",
         "shop_created": "Shop created",
         "service_created": "Service created",

@@ -92,14 +92,12 @@ function CreateShop() {
     useState<ShopSubcategory | null>(null);
   const [subcategoryError, setSubcategoryError] = useState("");
 
-  // Shops have their own category type now. Until an admin has created some,
-  // fall back to the product categories shops were always classified with, so
-  // a shop can still be created the day this ships.
-  const { data: shopCategoriesData } = useCategoriesQuery({ type: "shop" });
-  const { data: productCategoriesData } = useCategoriesQuery({ type: "product" });
-  const shopCategoryList = (shopCategoriesData?.data as unknown[] | undefined) ?? [];
-  const categoriesData =
-    shopCategoryList.length > 0 ? shopCategoriesData : productCategoriesData;
+  // Product categories, deliberately — a shop lists only inside the category
+  // it is opened under, and that comparison only holds while the two come from
+  // the same list. Switching this to the shop-type categories would leave the
+  // shop's category with no product category to match, and the listing form
+  // would quietly stop constraining anything.
+  const { data: categoriesData } = useCategoriesQuery({ type: "product" });
 
   const {
     data: locationsData,

@@ -111,14 +111,10 @@ function UpdateShop() {
   const loadedShopIdRef = useRef<string | null>(null);
   const skipNextCategoryResetRef = useRef(false);
 
-  // Shops have their own category type now. Until an admin has created some,
-  // fall back to the product categories shops were always classified with, so
-  // a shop can still be created the day this ships.
-  const { data: shopCategoriesData } = useCategoriesQuery({ type: "shop" });
-  const { data: productCategoriesData } = useCategoriesQuery({ type: "product" });
-  const shopCategoryList = (shopCategoriesData?.data as unknown[] | undefined) ?? [];
-  const categoriesData =
-    shopCategoryList.length > 0 ? shopCategoriesData : productCategoriesData;
+  // Product categories, deliberately — see the note in CreateShop: a shop
+  // lists only inside its own category, and that comparison only holds while
+  // the shop and its listings are classified from the same list.
+  const { data: categoriesData } = useCategoriesQuery({ type: "product" });
 
   const {
     data: locationsData,

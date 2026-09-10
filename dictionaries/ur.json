@@ -482,6 +482,7 @@
         "choose_subcategory": "ذیلی زمرہ منتخب کریں",
         "describe_shop": "اپنی دکان کی وضاحت کریں",
         "describe_product": "اپنی پروڈکٹ کی وضاحت کریں",
+        "shop_category_locked": "یہ دکان صرف {category} کی اشیاء لسٹ کرتی ہے",
         "enter_shop": "دکان بناییں",
         "shop_created": "دکان بنایا گیا ہے",
         "service_created": "سروس بنایا گیا ہے",

@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import chevron from "@/assets/icons/chev-down-icon.svg";
 import Image from "next/image";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
@@ -103,6 +103,35 @@ function UpdateProduct() {
   const loadedCategoryIdRef = useRef<string | null>(null);
   const hasLoadedProductRef = useRef(false);
   const hasHydratedWithCategoryParamsRef = useRef(false);
+
+  // A shop's listing belongs to the shop's category and an edit can't move it
+  // out — the same rule the create form applies, and the one the server
+  // enforces. A private listing keeps its free choice.
+  // `shopId` arrives as the populated shop row on a shop listing, and as
+  // nothing at all on a personal one.
+  const shopCategoryId: string =
+    productData?.shopId?.categoryId ||
+    productData?.shopId?.category?._id ||
+    productData?.shopId?.category?.id ||
+    "";
+
+  const lockedShopCategory = useMemo(() => {
+    if (!shopCategoryId) return null;
+    // Nothing to lock to when the shop is filed under something that isn't a
+    // product category — the server stands aside there too, so the picker
+    // stays available rather than leaving the listing uneditable.
+    const list = (categoriesData?.data ?? []) as categroyTypes[];
+    return (
+      list.find(
+        (category) =>
+          (category._id ?? (category as { id?: string }).id) === shopCategoryId,
+      ) ?? null
+    );
+  }, [shopCategoryId, categoriesData?.data]);
+
+  const lockedCategoryLabel = lockedShopCategory
+    ? getFeedCategoryLabel(lockedShopCategory.name, currentLanguage)
+    : "";
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -250,6 +279,15 @@ function UpdateProduct() {
       }
     }
   }, [product?.data, productSuccess, currentLanguage, categoriesData?.data]);
+
+  // Declared after the hydration effect on purpose: both fire in the same
+  // commit once the category list lands, and this one has to be the last word.
+  // A listing that predates the rule is moved into its shop's category here,
+  // which the row and the note under it show before anything is saved.
+  useEffect(() => {
+    if (!lockedShopCategory) return;
+    setSelectedCategory(lockedShopCategory);
+  }, [lockedShopCategory, product?.data, categoriesData?.data]);
 
   useEffect(() => {
     if (!hasLoadedProductRef.current) return;
@@ -444,22 +482,36 @@ function UpdateProduct() {
                   <h3 className="text-[15px] font-medium text-black-1">
                     {placeholders.category}
                   </h3>
-                  <div
-                    className="flex items-center gap-2 cursor-pointer"
-                    onClick={() => setIsCatOpen(true)}
-                  >
+                  {lockedShopCategory ? (
                     <h4 className="text-[15px] font-normal text-gray-8 leading-none">
-                      {selectedCategory
-                        ? getFeedCategoryLabel(selectedCategory.name, currentLanguage)
-                        : placeholders.choose_category}
+                      {lockedCategoryLabel}
                     </h4>
-                    <Image
-                      src={chevron}
-                      alt="chevron"
-                      className="-rotate-90 rtl:rotate-90 w-4"
-                    />
-                  </div>
+                  ) : (
+                    <div
+                      className="flex items-center gap-2 cursor-pointer"
+                      onClick={() => setIsCatOpen(true)}
+                    >
+                      <h4 className="text-[15px] font-normal text-gray-8 leading-none">
+                        {selectedCategory
+                          ? getFeedCategoryLabel(selectedCategory.name, currentLanguage)
+                          : placeholders.choose_category}
+                      </h4>
+                      <Image
+                        src={chevron}
+                        alt="chevron"
+                        className="-rotate-90 rtl:rotate-90 w-4"
+                      />
+                    </div>
+                  )}
                 </div>
+                {lockedShopCategory ? (
+                  <p className="px-4 pt-1 text-[13px] font-normal text-gray-8">
+                    {(
+                      info_messages.shop_category_locked ??
+                      "This shop lists {category} items only"
+                    ).replace("{category}", lockedCategoryLabel)}
+                  </p>
+                ) : null}
                 {categoryError && (
                   <p className="text-red-1 text-[14px] font-normal">
                     {categoryError}
