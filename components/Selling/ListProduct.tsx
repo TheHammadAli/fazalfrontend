@@ -549,6 +549,48 @@ function ListProduct() {
                 )}
                 {isPersonalListing ? (
                   <>
+                    {/* A shop's products take the shop's city and area; a
+                        private listing has to say where it is itself. */}
+                    <div className="bg-white px-4 pb-4">
+                      <LocationSelect
+                        label={info_messages.city ?? "City"}
+                        value={city}
+                        error={cityError}
+                        placeholder={placeholders.search_city ?? "Search city..."}
+                        initialOptions={PAKISTAN_CITY_OPTIONS}
+                        types="(cities)"
+                        onSelect={(option) => {
+                          setCity(option.name);
+                          setCityCoordinates(option.coordinates ?? null);
+                          setCityError("");
+                          setArea("");
+                        }}
+                      />
+
+                      <LocationSelect
+                        label={info_messages.area ?? "Area"}
+                        value={area}
+                        error={areaError}
+                        disabled={!city}
+                        disabledHint={placeholders.choose_city_first ?? "Choose a city first"}
+                        placeholder={placeholders.search_area ?? "Search area..."}
+                        emptyHint={
+                          city
+                            ? `${placeholders.search_area ?? "Search area..."} (${city})`
+                            : undefined
+                        }
+                        types="(regions)"
+                        city={city}
+                        initialOptions={cityAreaOptions}
+                        near={cityCoordinates}
+                        withCoordinates={false}
+                        allowCustom
+                        onSelect={(option) => {
+                          setArea(option.name);
+                          setAreaError("");
+                        }}
+                      />
+                    </div>
                     <div className="relative border-b-[1px] border-gray-9 bg-white px-4" ref={locationRef}>
                       <div
                         className="flex min-h-[50px] cursor-pointer items-start justify-between gap-3 py-3"
@@ -639,48 +681,6 @@ function ListProduct() {
                       </p>
                     )}
 
-                    {/* A shop's products take the shop's city and area; a
-                        private listing has to say where it is itself. */}
-                    <div className="bg-white px-4 pb-4">
-                      <LocationSelect
-                        label={info_messages.city ?? "City"}
-                        value={city}
-                        error={cityError}
-                        placeholder={placeholders.search_city ?? "Search city..."}
-                        initialOptions={PAKISTAN_CITY_OPTIONS}
-                        types="(cities)"
-                        onSelect={(option) => {
-                          setCity(option.name);
-                          setCityCoordinates(option.coordinates ?? null);
-                          setCityError("");
-                          setArea("");
-                        }}
-                      />
-
-                      <LocationSelect
-                        label={info_messages.area ?? "Area"}
-                        value={area}
-                        error={areaError}
-                        disabled={!city}
-                        disabledHint={placeholders.choose_city_first ?? "Choose a city first"}
-                        placeholder={placeholders.search_area ?? "Search area..."}
-                        emptyHint={
-                          city
-                            ? `${placeholders.search_area ?? "Search area..."} (${city})`
-                            : undefined
-                        }
-                        types="(regions)"
-                        city={city}
-                        initialOptions={cityAreaOptions}
-                        near={cityCoordinates}
-                        withCoordinates={false}
-                        allowCustom
-                        onSelect={(option) => {
-                          setArea(option.name);
-                          setAreaError("");
-                        }}
-                      />
-                    </div>
                   </>
                 ) : null}
                 <div className="bg-gray-12   h-[27px] "></div>
