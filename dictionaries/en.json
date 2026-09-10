@@ -486,6 +486,8 @@
         "market_name": "Market name",
         "contact_no": "Contact no",
         "opening_hours": "Opening hours",
+        "opens_at": "Opens at",
+        "closes_at": "Closes at",
         "subcategory": "Subcategory",
         "choose_subcategory": "Choose subcategory",
         "describe_shop": "Describe your shop",

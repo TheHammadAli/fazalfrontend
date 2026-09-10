@@ -483,6 +483,8 @@
         "market_name": "مارکیٹ کا نام",
         "contact_no": "رابطہ نمبر",
         "opening_hours": "اوقات کار",
+        "opens_at": "کھلنے کا وقت",
+        "closes_at": "بند ہونے کا وقت",
         "subcategory": "ذیلی زمرہ",
         "choose_subcategory": "ذیلی زمرہ منتخب کریں",
         "describe_shop": "اپنی دکان کی وضاحت کریں",

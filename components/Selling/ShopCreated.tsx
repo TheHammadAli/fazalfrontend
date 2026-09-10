@@ -7,18 +7,31 @@ import { useDictionary } from "@/dictionaries/DictionaryProvider";
 import DoodleButton from "@/components/Ui/DoodleButton";
 interface Props {
   id: string;
+  image?: string | null;
 }
-function ShopCreated({ id }: Props) {
+function ShopCreated({ id, image }: Props) {
   const router = useRouter();
   const { info_messages, placeholders } = useDictionary();
   return (
     <div className="w-full max-w-[422px]">
       <div className="flex flex-col items-center mt-[80px]">
-        <Image src={tickIcon} alt="tick-icon" className=" rounded-full" />
+        {image ? (
+          <div className="relative h-[72px] w-[72px]">
+            <Image
+              src={image}
+              alt="shop-icon"
+              fill
+              unoptimized
+              className="rounded-full object-cover"
+            />
+          </div>
+        ) : (
+          <Image src={tickIcon} alt="tick-icon" className=" rounded-full" />
+        )}
         <h1 className="font-medium text-[22px] text-black-1 mt-3">
           {info_messages.shop_created}
         </h1>
-        <h3 className="text-center text-[14px] font-normal text-gray-8 max-w-[310px]">
+        <h3 className="text-center text-[13px] font-normal text-gray-8 max-w-[310px]">
           {info_messages.created_description}
         </h3>
       </div>

@@ -50,6 +50,45 @@ function getSubcategoryId(item: ShopSubcategory): string {
   return item._id ?? item.id ?? "";
 }
 
+/** "09:00" (the native <input type="time"> value) -> "9:00 AM". */
+function formatTimeLabel(time24: string): string {
+  const [hoursStr, minutes] = time24.split(":");
+  let hours = parseInt(hoursStr, 10);
+  const suffix = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12 || 12;
+  return `${hours}:${minutes} ${suffix}`;
+}
+
+/** The backend still stores opening hours as one free-text string — this is
+ *  the only place that composes the two time pickers into it. */
+function formatOpeningHours(from: string, to: string): string {
+  return `${formatTimeLabel(from)} - ${formatTimeLabel(to)}`;
+}
+
+/** Best-effort reverse of the above, for hydrating the two time pickers from
+ *  a shop's existing free-text value (the only shape this field had before
+ *  the pickers replaced it). Returns null for anything that doesn't look
+ *  like "<time> - <time>" so the pickers just open blank instead of guessing. */
+function parseOpeningHours(value: string): { from: string; to: string } | null {
+  const parts = value.split(/-|to/i).map((part) => part.trim()).filter(Boolean);
+  if (parts.length !== 2) return null;
+
+  const parseToken = (token: string): string | null => {
+    const match = token.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+    if (!match) return null;
+    let hours = parseInt(match[1], 10);
+    const minutes = match[2];
+    const suffix = match[3]?.toUpperCase();
+    if (suffix === "PM" && hours < 12) hours += 12;
+    if (suffix === "AM" && hours === 12) hours = 0;
+    return `${String(hours).padStart(2, "0")}:${minutes}`;
+  };
+
+  const from = parseToken(parts[0]);
+  const to = parseToken(parts[1]);
+  return from && to ? { from, to } : null;
+}
+
 function resolveCategoryId(value: unknown): string {
   if (!value) return "";
   if (typeof value === "string") return value;
@@ -99,7 +138,10 @@ function UpdateShop() {
   const [marketNameError, setMarketNameError] = useState("");
   const [contact, setContact] = useState("");
   const [contactError, setContactError] = useState("");
-  const [openingHours, setOpeningHours] = useState("");
+  // Opens-at/closes-at pickers replace a free-text field; formatOpeningHours
+  // composes them into the single string the backend still stores.
+  const [openFrom, setOpenFrom] = useState("");
+  const [openTo, setOpenTo] = useState("");
   const [openingHoursError, setOpeningHoursError] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<ShopCategory | null>(
     null,
@@ -232,7 +274,9 @@ function UpdateShop() {
     );
     setMarketName(shopData?.marketName ?? "");
     setContact(shopData?.contact ?? "");
-    setOpeningHours(shopData?.openingHours ?? "");
+    const parsedHours = parseOpeningHours(shopData?.openingHours ?? "");
+    setOpenFrom(parsedHours?.from ?? "");
+    setOpenTo(parsedHours?.to ?? "");
     setAddress(shopData?.address ?? "");
     setLocation({
       ...shopData?.location,
@@ -314,12 +358,15 @@ function UpdateShop() {
       error_messages["contact_required" as keyof typeof error_messages] ??
       "Contact no is required*",
     );
-    checkField(
-      openingHours,
-      setOpeningHoursError,
-      error_messages["opening_hours_required" as keyof typeof error_messages] ??
-      "Opening hours are required*",
-    );
+    if (!openFrom || !openTo) {
+      setOpeningHoursError(
+        error_messages["opening_hours_required" as keyof typeof error_messages] ??
+        "Opening hours are required*",
+      );
+      isValid = false;
+    } else {
+      setOpeningHoursError("");
+    }
 
     if (Object.keys(location).length === 0 || !address.trim()) {
       setLocationError(error_messages.shop_location_required);
@@ -357,7 +404,7 @@ function UpdateShop() {
         city: city.trim(),
         marketName: marketName.trim(),
         contact: contact.trim(),
-        openingHours: openingHours.trim(),
+        openingHours: formatOpeningHours(openFrom, openTo),
         category: selectedCategory._id,
         subcategory: subcategoryId || selectedCategory._id,
         location: {
@@ -626,13 +673,30 @@ function UpdateShop() {
             >
               {info_messages.opening_hours ?? "Opening hours"}
             </p>
-            <input
-              type="text"
-              value={openingHours}
-              onChange={(e) => setOpeningHours(e.target.value)}
-              placeholder="e.g. 9:00 AM - 9:00 PM"
-              className="h-[28px] w-full border-b-[1px] border-gray-9 text-[15px] font-normal text-black-1 focus:outline-none placeholder:text-gray-8"
-            />
+            <div className="flex items-center gap-4">
+              <div className="w-full">
+                <p className="text-[12px] font-normal text-gray-8">
+                  {info_messages["opens_at" as keyof typeof info_messages] ?? "Opens at"}
+                </p>
+                <input
+                  type="time"
+                  value={openFrom}
+                  onChange={(e) => setOpenFrom(e.target.value)}
+                  className="h-[28px] w-full border-b-[1px] border-gray-9 text-[15px] font-normal text-black-1 focus:outline-none"
+                />
+              </div>
+              <div className="w-full">
+                <p className="text-[12px] font-normal text-gray-8">
+                  {info_messages["closes_at" as keyof typeof info_messages] ?? "Closes at"}
+                </p>
+                <input
+                  type="time"
+                  value={openTo}
+                  onChange={(e) => setOpenTo(e.target.value)}
+                  className="h-[28px] w-full border-b-[1px] border-gray-9 text-[15px] font-normal text-black-1 focus:outline-none"
+                />
+              </div>
+            </div>
             {openingHoursError && (
               <p className="text-[14px] font-normal text-red-1">
                 {openingHoursError}
@@ -844,16 +908,6 @@ function UpdateShop() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 mt-1 w-full">
-            <Image
-              src={locationIcon}
-              className="h-[13px] w-[11px]"
-              alt="Country Flag"
-            />
-            <p className="text-[#030303] font-medium text-[14px] underline cursor-pointer">
-              {placeholders.choose_map_location}
-            </p>
-          </div>
           <div className="space-y-1 mt-5 w-full">
             <p
               className={`text-[14px] font-normal  ${descriptionError ? "text-red-1" : "text-gray-8"

@@ -47,9 +47,26 @@ function getSubcategoryId(item: ShopSubcategory): string {
   return item._id ?? item.id ?? "";
 }
 
+/** "09:00" (the native <input type="time"> value) -> "9:00 AM". */
+function formatTimeLabel(time24: string): string {
+  const [hoursStr, minutes] = time24.split(":");
+  let hours = parseInt(hoursStr, 10);
+  const suffix = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12 || 12;
+  return `${hours}:${minutes} ${suffix}`;
+}
+
+/** The backend still stores opening hours as one free-text string — this is
+ *  the only place that composes the two time pickers into it. */
+function formatOpeningHours(from: string, to: string): string {
+  return `${formatTimeLabel(from)} - ${formatTimeLabel(to)}`;
+}
+
 function CreateShop() {
   const [status, setStatus] = useState("form");
-  const [createdData, setCreatedData] = useState<{ id: string }>({ id: "" });
+  const [createdData, setCreatedData] = useState<{ id: string; image?: string | null }>({
+    id: "",
+  });
   const { placeholders, error_messages, pages, info_messages, currentLanguage } =
     useDictionary();
   const categoryRef = useRef<HTMLDivElement | null>(null);
@@ -82,7 +99,10 @@ function CreateShop() {
   const [marketNameError, setMarketNameError] = useState("");
   const [contact, setContact] = useState("");
   const [contactError, setContactError] = useState("");
-  const [openingHours, setOpeningHours] = useState("");
+  // Opens-at/closes-at pickers replace a free-text field; formatOpeningHours
+  // composes them into the single string the backend still stores.
+  const [openFrom, setOpenFrom] = useState("");
+  const [openTo, setOpenTo] = useState("");
   const [openingHoursError, setOpeningHoursError] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<ShopCategory | null>(
     null,
@@ -236,12 +256,15 @@ function CreateShop() {
       error_messages["contact_required" as keyof typeof error_messages] ??
       "Contact no is required*",
     );
-    checkField(
-      openingHours,
-      setOpeningHoursError,
-      error_messages["opening_hours_required" as keyof typeof error_messages] ??
-      "Opening hours are required*",
-    );
+    if (!openFrom || !openTo) {
+      setOpeningHoursError(
+        error_messages["opening_hours_required" as keyof typeof error_messages] ??
+        "Opening hours are required*",
+      );
+      isValid = false;
+    } else {
+      setOpeningHoursError("");
+    }
 
     if (Object.keys(location).length === 0 || !address.trim()) {
       setLocationError(error_messages.shop_location_required);
@@ -282,7 +305,7 @@ function CreateShop() {
         city: city.trim(),
         marketName: marketName.trim(),
         contact: contact.trim(),
-        openingHours: openingHours.trim(),
+        openingHours: formatOpeningHours(openFrom, openTo),
         category: selectedCategory._id,
         subcategory: selectedCategory?._id,
         location: {
@@ -346,7 +369,7 @@ function CreateShop() {
       </div>
       <div className=" px-6 xl:px-0 flex justify-center">
         {status === "success" ? (
-          <ShopCreated id={createdData?.id} />
+          <ShopCreated id={createdData?.id} image={createdData?.image} />
         ) : (
           <form
             onSubmit={handleSubmit}
@@ -575,13 +598,30 @@ function CreateShop() {
               >
                 {info_messages.opening_hours ?? "Opening hours"}
               </p>
-              <input
-                type="text"
-                value={openingHours}
-                onChange={(e) => setOpeningHours(e.target.value)}
-                placeholder="e.g. 9:00 AM - 9:00 PM"
-                className="h-[28px] w-full border-b-[1px] border-gray-9 text-[15px] font-normal text-black-1 focus:outline-none placeholder:text-gray-8"
-              />
+              <div className="flex items-center gap-4">
+                <div className="w-full">
+                  <p className="text-[12px] font-normal text-gray-8">
+                    {info_messages["opens_at" as keyof typeof info_messages] ?? "Opens at"}
+                  </p>
+                  <input
+                    type="time"
+                    value={openFrom}
+                    onChange={(e) => setOpenFrom(e.target.value)}
+                    className="h-[28px] w-full border-b-[1px] border-gray-9 text-[15px] font-normal text-black-1 focus:outline-none"
+                  />
+                </div>
+                <div className="w-full">
+                  <p className="text-[12px] font-normal text-gray-8">
+                    {info_messages["closes_at" as keyof typeof info_messages] ?? "Closes at"}
+                  </p>
+                  <input
+                    type="time"
+                    value={openTo}
+                    onChange={(e) => setOpenTo(e.target.value)}
+                    className="h-[28px] w-full border-b-[1px] border-gray-9 text-[15px] font-normal text-black-1 focus:outline-none"
+                  />
+                </div>
+              </div>
               {openingHoursError && (
                 <p className="text-[14px] font-normal text-red-1">
                   {openingHoursError}
@@ -796,16 +836,6 @@ function CreateShop() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 mt-1 w-full">
-              <Image
-                src={locationIcon}
-                className="h-[13px] w-[11px]"
-                alt="Country Flag"
-              />
-              <p className="text-[#030303] font-medium text-[14px] underline cursor-pointer">
-                {placeholders.choose_map_location}
-              </p>
-            </div>
             <DoodleButton
               type="submit"
               disabled={isLoading}
