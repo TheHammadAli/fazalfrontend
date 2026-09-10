@@ -33,6 +33,7 @@ import { useDebounce } from "use-debounce";
 import { useGetLocationsQuery } from "@/store/services/authService";
 import locationIcon from "@/assets/icons/location-icon.svg";
 import LocationSelect, { type LocationCoordinates } from "@/components/Ui/LocationSelect";
+import LocationPickerModal from "@/components/Ui/LocationPickerModal";
 import { PAKISTAN_CITY_OPTIONS } from "@/assets/content/locations";
 import { useGetCityAreasQuery } from "@/store/services/authService";
 
@@ -143,6 +144,7 @@ function ListProduct() {
   const [address, setAddress] = useState("");
   const [locationSearch, setLocationSearch] = useState("");
   const [locationError, setLocationError] = useState("");
+  const [isMapPickerOpen, setIsMapPickerOpen] = useState(false);
   const [city, setCity] = useState("");
   const [cityError, setCityError] = useState("");
   const [cityCoordinates, setCityCoordinates] = useState<LocationCoordinates>(null);
@@ -675,6 +677,18 @@ function ListProduct() {
                         </div>
                       ) : null}
                     </div>
+
+                    <div className="bg-white px-4 pb-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsMapPickerOpen(true)}
+                        className="inline-flex cursor-pointer items-center gap-2 text-[14px] font-medium text-green-1"
+                      >
+                        <Image src={locationIcon} alt="" className="h-[14px] w-[11px]" />
+                        {placeholders.choose_on_map ?? "Choose on map"}
+                      </button>
+                    </div>
+
                     {locationError && (
                       <p className="text-red-1 text-[14px] font-normal">
                         {locationError}
@@ -725,6 +739,39 @@ function ListProduct() {
           </div>
         )}
       </div>
+
+      <LocationPickerModal
+        open={isMapPickerOpen}
+        onClose={() => setIsMapPickerOpen(false)}
+        initial={
+          location?.coordinates?.lat != null && location?.coordinates?.lng != null
+            ? {
+                description: location.description ?? "",
+                coordinates: {
+                  lat: location.coordinates.lat,
+                  lng: location.coordinates.lng,
+                },
+              }
+            : null
+        }
+        labels={{
+          title: placeholders.choose_location,
+          search: placeholders.search_country,
+          useCurrent: placeholders.use_current_location ?? "Use my current location",
+          confirm: placeholders.confirm,
+          cancel: placeholders.cancel,
+        }}
+        onConfirm={(picked) => {
+          // Same shape the search dropdown produces, so toPointLocation and the
+          // submit path are unchanged.
+          setLocation({
+            description: picked.description,
+            coordinates: picked.coordinates,
+          });
+          setAddress(picked.description);
+          setLocationError("");
+        }}
+      />
     </>
   );
 }
