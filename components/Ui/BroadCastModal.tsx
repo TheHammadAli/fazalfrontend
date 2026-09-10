@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import chevDown from "@/assets/icons/chev-down-icon.svg";
 import crossIcon from "@/assets/icons/cross-icon.svg";
-import locationIcon from "@/assets/icons/location-icon.svg";
 import chooseLocationIcon from "@/assets/icons/choose-location-icon.svg";
 import setRadiusIcon from "@/assets/icons/set-radius-icon.svg";
 import selectTypeIcon from "@/assets/icons/select-type-icon.svg";
@@ -14,15 +13,14 @@ import messageSentGif from "@/assets/Gif/message-sent.gif";
 import Image, { type StaticImageData } from "next/image";
 import { Plus } from "lucide-react";
 import { useCategoriesQuery } from "@/custom-hooks/useCategoriesQuery";
-import { useGetLocationsQuery } from "@/store/services/authService";
 import { toast } from "react-hot-toast";
 import { useBroadcastMessageMutation } from "@/store/services/chatService";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
 import { getFeedCategoryLabel } from "@/utils/getFeedCategoryLabel";
 import ChooseImagesTab from "@/components/Services/ChooseImagesTab";
-import { useClickOutside } from "@/custom-hooks/useClickOutside";
-import { useDebounce } from "use-debounce";
 import DoodleButton from "@/components/Ui/DoodleButton";
+import LocationSelect, { type LocationCoordinates } from "@/components/Ui/LocationSelect";
+import { PAKISTAN_CITY_OPTIONS } from "@/assets/content/locations";
 import { createPortal } from "react-dom";
 
 type CategoryItem = {
@@ -123,25 +121,19 @@ function BroadCastModal({ setOpenBroadcast }: { setOpenBroadcast: (open: boolean
     const [selectedPurpose, setSelectedPurpose] = useState<BroadcastPurpose | null>(null);
     const [isCategoryOpen, setIsCategoryOpen] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<CategoryItem | null>(null);
-    const locationRef = useRef<HTMLDivElement | null>(null);
-    const [isLocationOpen, setIsLocationOpen] = useState(false);
     const [location, setLocation] = useState<Location>({});
     const [address, setAddress] = useState("");
-    const [locationSearch, setLocationSearch] = useState("");
-    const [debouncedLocationSearch] = useDebounce(locationSearch, 500);
+    // City narrows the Area search (and biases it via `near`); Area is what
+    // actually resolves to the point sent as `location` — same City->Area
+    // cascade as CreateShop.tsx, reused here via the same LocationSelect.
+    const [city, setCity] = useState("");
+    const [area, setArea] = useState("");
+    const [cityCoordinates, setCityCoordinates] = useState<LocationCoordinates>(null);
     const { data: categories, isLoading: isCategoriesLoading, isFetching: isCategoriesFetching } =
         useCategoriesQuery(
             { type: selectedType ?? undefined },
             { skip: !selectedType },
         );
-    const {
-        data: locationsData,
-        isLoading: isLocationsLoading,
-        isFetching: isLocationsFetching,
-    } = useGetLocationsQuery(
-        { q: debouncedLocationSearch },
-        { skip: locationSearch?.trim() === "" },
-    );
     const [message, setMessage] = useState("");
     const [images, setImages] = useState<(File | string)[]>([]);
     const photoInputRef = useRef<HTMLInputElement | null>(null);
@@ -191,10 +183,6 @@ function BroadCastModal({ setOpenBroadcast }: { setOpenBroadcast: (open: boolean
             .replace("{category}", categoryName)
             .replace("{location}", locationName);
     };
-
-    useClickOutside(locationRef, () => {
-        setIsLocationOpen(false);
-    });
 
     const handlePhotoUpload = (fileList: FileList | null) => {
         if (!fileList?.length) return;
@@ -359,82 +347,43 @@ function BroadCastModal({ setOpenBroadcast }: { setOpenBroadcast: (open: boolean
                 <div className={`space-y-2  py-3 ${isBroadcastLoading ? "pointer-events-none opacity-70" : ""}`}>
                     <div className="px-5">
                         <div className="px-2">
-                            <div className="relative border-b border-gray-9 ">
-                                <div ref={locationRef}>
-                                    <BroadcastFieldRow
-                                        icon={chooseLocationIcon}
-                                        label={ph("choose_location")}
-                                        value={location?.description}
+                            <div className="flex items-start gap-2">
+                                <Image src={chooseLocationIcon} alt="" className="mt-6 h-5 w-5 shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                    <LocationSelect
+                                        label={info_messages.city ?? "City"}
+                                        value={city}
+                                        initialOptions={PAKISTAN_CITY_OPTIONS}
+                                        types="(cities)"
                                         placeholder={ph("select_your_location")}
                                         disabled={isBroadcastLoading}
-                                        onClick={() => {
-                                            setIsLocationOpen((prev) => !prev);
-                                            setIsRadiusOpen(false);
-                                            setIsTypeOpen(false);
-                                            setIsPurposeOpen(false);
-                                            setIsCategoryOpen(false);
+                                        onSelect={(option) => {
+                                            setCity(option.name);
+                                            setCityCoordinates(option.coordinates ?? null);
+                                            setArea("");
+                                            setLocation({});
+                                            setAddress("");
                                         }}
                                     />
-                                    {isLocationOpen ? (
-                                        <div className={`${DROPDOWN_PANEL_CLASS} max-h-none overflow-hidden rounded-[8px] pt-1`}>
-                                            <input
-                                                type="text"
-                                                placeholder={ph("search_country")}
-                                                className="w-full rounded-t-[8px] border-b border-gray-9 px-3 py-2 text-[14px] outline-none"
-                                                value={locationSearch}
-                                                onChange={(e) => setLocationSearch(e.target.value)}
-                                            />
-                                            <div className="max-h-[200px] overflow-y-auto">
-                                                {!isLocationsLoading &&
-                                                    !isLocationsFetching &&
-                                                    (locationsData?.data?.length ?? 0) > 0 &&
-                                                    locationsData?.data?.map((item: Location, index: number) => (
-                                                        <button
-                                                            key={`${item.description}-${index}`}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setLocation(item);
-                                                                setAddress(item.description?.trim() ?? "");
-                                                                setIsLocationOpen(false);
-                                                                setLocationSearch("");
-                                                            }}
-                                                            className="flex w-full cursor-pointer items-center gap-2 border-b border-gray-9 px-3 py-2 text-left text-[14px] text-black-1 last:border-b-0 hover:bg-gray-10"
-                                                        >
-                                                            <Image
-                                                                src={locationIcon}
-                                                                alt=""
-                                                                className="h-[18px] w-[14px] shrink-0"
-                                                            />
-                                                            <span>{item.description}</span>
-                                                        </button>
-                                                    ))}
-                                                {!isLocationsLoading &&
-                                                    !isLocationsFetching &&
-                                                    locationsData?.data?.length === 0 && (
-                                                        <p className="px-3 py-2 text-[14px] text-gray-8">
-                                                            {ph("no_data_available")}
-                                                        </p>
-                                                    )}
-                                                {(isLocationsLoading || isLocationsFetching) && (
-                                                    <div className="space-y-1 p-1">
-                                                        {Array.from({ length: 4 }).map((_, index) => (
-                                                            <div
-                                                                key={index}
-                                                                className="h-[36px] animate-pulse rounded bg-gray-10"
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                )}
-                                                {!locationsData &&
-                                                    !isLocationsLoading &&
-                                                    !isLocationsFetching && (
-                                                        <p className="px-3 py-2 text-[14px] text-gray-8">
-                                                            {ph("no_data_available")}
-                                                        </p>
-                                                    )}
-                                            </div>
-                                        </div>
-                                    ) : null}
+                                    <LocationSelect
+                                        label={info_messages.area ?? "Area"}
+                                        value={area}
+                                        disabled={isBroadcastLoading || !city}
+                                        disabledHint="Choose a city first"
+                                        types="(regions)"
+                                        city={city}
+                                        near={cityCoordinates}
+                                        allowCustom
+                                        onSelect={(option) => {
+                                            const description = `${option.name}, ${city}`;
+                                            setArea(option.name);
+                                            setAddress(description);
+                                            setLocation({
+                                                description,
+                                                coordinates: option.coordinates ?? cityCoordinates ?? undefined,
+                                            });
+                                        }}
+                                    />
                                 </div>
                             </div>
 
@@ -454,7 +403,6 @@ function BroadCastModal({ setOpenBroadcast }: { setOpenBroadcast: (open: boolean
                                         setIsTypeOpen(false);
                                         setIsPurposeOpen(false);
                                         setIsCategoryOpen(false);
-                                        setIsLocationOpen(false);
                                     }}
                                 />
                                 {isRadiusOpen ? (
@@ -492,7 +440,6 @@ function BroadCastModal({ setOpenBroadcast }: { setOpenBroadcast: (open: boolean
                                         setIsRadiusOpen(false);
                                         setIsPurposeOpen(false);
                                         setIsCategoryOpen(false);
-                                        setIsLocationOpen(false);
                                     }}
                                 />
                                 {isTypeOpen ? (
@@ -535,7 +482,6 @@ function BroadCastModal({ setOpenBroadcast }: { setOpenBroadcast: (open: boolean
                                         setIsRadiusOpen(false);
                                         setIsTypeOpen(false);
                                         setIsCategoryOpen(false);
-                                        setIsLocationOpen(false);
                                     }}
                                 />
                                 {isPurposeOpen ? (
@@ -581,7 +527,6 @@ function BroadCastModal({ setOpenBroadcast }: { setOpenBroadcast: (open: boolean
                                         setIsRadiusOpen(false);
                                         setIsTypeOpen(false);
                                         setIsPurposeOpen(false);
-                                        setIsLocationOpen(false);
                                     }}
                                 />
                                 {isCategoryOpen && selectedType ? (
