@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import chevron from "@/assets/icons/chev-down-icon.svg";
 import Image from "next/image";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
@@ -32,6 +32,9 @@ import { useClickOutside } from "@/custom-hooks/useClickOutside";
 import { useDebounce } from "use-debounce";
 import { useGetLocationsQuery } from "@/store/services/authService";
 import locationIcon from "@/assets/icons/location-icon.svg";
+import LocationSelect, { type LocationCoordinates } from "@/components/Ui/LocationSelect";
+import { PAKISTAN_CITY_OPTIONS } from "@/assets/content/locations";
+import { useGetCityAreasQuery } from "@/store/services/authService";
 
 type Location = {
   description?: string;
@@ -140,6 +143,11 @@ function ListProduct() {
   const [address, setAddress] = useState("");
   const [locationSearch, setLocationSearch] = useState("");
   const [locationError, setLocationError] = useState("");
+  const [city, setCity] = useState("");
+  const [cityError, setCityError] = useState("");
+  const [cityCoordinates, setCityCoordinates] = useState<LocationCoordinates>(null);
+  const [area, setArea] = useState("");
+  const [areaError, setAreaError] = useState("");
   const [debouncedLocationSearch] = useDebounce(locationSearch, 500);
   const id = useSearchParams().get("id") || "";
   const productType = useSearchParams().get("type") || "";
@@ -165,6 +173,32 @@ function ListProduct() {
     : placeholders.private_listing;
 
   const isInitialCategoryRender = useRef(true);
+
+  const { data: cityAreasData } = useGetCityAreasQuery(
+    {
+      city,
+      ...(cityCoordinates
+        ? { lat: String(cityCoordinates.lat), lng: String(cityCoordinates.lng) }
+        : {}),
+    },
+    { skip: !isPersonalListing || !city },
+  );
+
+  const cityAreaOptions = useMemo(() => {
+    const rows =
+      (
+        cityAreasData as
+          | { data?: { name?: string; mainText?: string; description?: string }[] }
+          | undefined
+      )?.data ?? [];
+    return rows
+      .map((row) => ({
+        name: row.name ?? row.mainText ?? row.description ?? "",
+        subtitle: row.description,
+        coordinates: null,
+      }))
+      .filter((option) => option.name);
+  }, [cityAreasData]);
 
   useClickOutside(locationRef, () => {
     setIsLocationOpen(false);
@@ -216,6 +250,18 @@ function ListProduct() {
     if (isPersonalListing && !pointLocation) {
       setLocationError(error_messages.location_required);
     }
+    if (isPersonalListing && !city.trim()) {
+      setCityError(
+        error_messages["city_required" as keyof typeof error_messages] ??
+          "City is required*",
+      );
+    }
+    if (isPersonalListing && !area.trim()) {
+      setAreaError(
+        error_messages["area_required" as keyof typeof error_messages] ??
+          "Area is required*",
+      );
+    }
     if (parameters.length === 0) {
       setParameterError(error_messages.parameter_required);
     }
@@ -235,7 +281,7 @@ function ListProduct() {
       description !== "" &&
       selectedCategory !== null &&
       selectedPrice.price !== "" &&
-      (!isPersonalListing || pointLocation) &&
+      (!isPersonalListing || (pointLocation && city.trim() && area.trim())) &&
       images?.length > 0 &&
       parameters.length > 0 &&
       !hasMissingParameterValues(parameters) &&
@@ -251,6 +297,8 @@ function ListProduct() {
       if (isPersonalListing && pointLocation) {
         formData.append("location", JSON.stringify(pointLocation));
         formData.append("address", address);
+        formData.append("city", city.trim());
+        formData.append("area", area.trim());
       }
       if (parameters.length > 0) {
         formData.append("parameters", JSON.stringify(toApiParameters(parameters)));
@@ -590,6 +638,49 @@ function ListProduct() {
                         {locationError}
                       </p>
                     )}
+
+                    {/* A shop's products take the shop's city and area; a
+                        private listing has to say where it is itself. */}
+                    <div className="bg-white px-4 pb-4">
+                      <LocationSelect
+                        label={info_messages.city ?? "City"}
+                        value={city}
+                        error={cityError}
+                        placeholder={placeholders.search_city ?? "Search city..."}
+                        initialOptions={PAKISTAN_CITY_OPTIONS}
+                        types="(cities)"
+                        onSelect={(option) => {
+                          setCity(option.name);
+                          setCityCoordinates(option.coordinates ?? null);
+                          setCityError("");
+                          setArea("");
+                        }}
+                      />
+
+                      <LocationSelect
+                        label={info_messages.area ?? "Area"}
+                        value={area}
+                        error={areaError}
+                        disabled={!city}
+                        disabledHint={placeholders.choose_city_first ?? "Choose a city first"}
+                        placeholder={placeholders.search_area ?? "Search area..."}
+                        emptyHint={
+                          city
+                            ? `${placeholders.search_area ?? "Search area..."} (${city})`
+                            : undefined
+                        }
+                        types="(regions)"
+                        city={city}
+                        initialOptions={cityAreaOptions}
+                        near={cityCoordinates}
+                        withCoordinates={false}
+                        allowCustom
+                        onSelect={(option) => {
+                          setArea(option.name);
+                          setAreaError("");
+                        }}
+                      />
+                    </div>
                   </>
                 ) : null}
                 <div className="bg-gray-12   h-[27px] "></div>
