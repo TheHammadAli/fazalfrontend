@@ -8,6 +8,7 @@ import { useDebounce } from "use-debounce";
 import Modal from "@/components/Ui/Modals/Modal";
 import {
   useGetLocationsQuery,
+  useGetMapsKeyQuery,
   useLazyReverseGeocodeQuery,
 } from "@/store/services/authService";
 
@@ -104,7 +105,14 @@ function LocationPickerModal({
         | undefined
     )?.data ?? [];
 
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
+  // The map is drawn by the browser, so a key has to reach it. The web app is
+  // deployed apart from the API and cannot read its environment, so the key
+  // comes from the backend, which already holds it. A NEXT_PUBLIC_ key wins
+  // when one is set, so a restricted browser-only key can take over later
+  // without touching this.
+  const { data: mapsKeyData } = useGetMapsKeyQuery(undefined, { skip: !open });
+  const servedKey = (mapsKeyData as { data?: { key?: string } } | undefined)?.data?.key ?? "";
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || servedKey;
 
   /** Moves the pin and asks the backend what is there. */
   const placePin = useCallback(
@@ -142,12 +150,8 @@ function LocationPickerModal({
   // it does not pay for the script until the picker is used.
   useEffect(() => {
     if (!open) return;
-    if (!apiKey) {
-      setMapError(
-        "Map unavailable: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not set.",
-      );
-      return;
-    }
+    // Still waiting on the served key — not an error yet.
+    if (!apiKey) return;
 
     let cancelled = false;
     setMapError("");

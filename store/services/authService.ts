@@ -73,6 +73,9 @@ export const authService = baseApi.injectEndpoints({
         method: "GET",
       }),
     }),
+    getMapsKey: build.query({
+      query: () => ({ url: `/search/maps-key`, method: "GET" }),
+    }),
     getUserWithProvidedToken: build.query({
       query: ({ token }) => {
         return {
@@ -115,6 +118,7 @@ export const {
   useGetLocationsQuery,
   useGetCityAreasQuery,
   useLazyReverseGeocodeQuery,
+  useGetMapsKeyQuery,
   useResetPasswordMutation,
   useLazyVerifyEmailQuery,
   useForgotPasswordMutation,
