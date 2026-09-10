@@ -21,6 +21,12 @@ export type CategoryParameterEntry = {
    *  values under that parent value. `values` is always the flattened union
    *  of these, kept for a client that has never heard of `dependsOn`. */
   valuesByParent?: Record<string, string[]>;
+  /** Same shape as `valuesByParent`, but holding THIS entry's own value keys
+   *  instead of display text — what a further, grandchild entry resolves
+   *  against once a cascade has narrowed this one down to a single bucket
+   *  (see `cascadeParameterDependents` in ParametersModal.tsx for why the
+   *  flat `valueKeys` alone isn't enough for that). */
+  valueKeysByParent?: Record<string, string[]>;
 };
 
 export type CategoryParameters = {
@@ -85,6 +91,12 @@ export function getCategoryParameterEntries(
         !Array.isArray(entry.valuesByParent)
           ? entry.valuesByParent
           : undefined;
+      const valueKeysByParent =
+        entry?.valueKeysByParent &&
+        typeof entry.valueKeysByParent === "object" &&
+        !Array.isArray(entry.valueKeysByParent)
+          ? entry.valueKeysByParent
+          : undefined;
 
       return {
         name,
@@ -92,6 +104,7 @@ export function getCategoryParameterEntries(
         ...(dependsOn ? { dependsOn } : {}),
         ...(valueKeys ? { valueKeys } : {}),
         ...(valuesByParent ? { valuesByParent } : {}),
+        ...(valueKeysByParent ? { valueKeysByParent } : {}),
       };
     })
     .filter((entry): entry is CategoryParameterEntry => entry != null);
@@ -119,6 +132,7 @@ export function mapCategoryParametersToListingParameters(
       ...(isDependent ? { dependsOnIndex } : {}),
       ...(entry.valueKeys ? { valueKeys: entry.valueKeys } : {}),
       ...(entry.valuesByParent ? { valuesByParent: entry.valuesByParent } : {}),
+      ...(entry.valueKeysByParent ? { valueKeysByParent: entry.valueKeysByParent } : {}),
     };
   });
 }
@@ -175,15 +189,22 @@ export function hydrateListingParametersFromApi(
       : undefined;
 
     let options: string[];
+    let activeParentKey: string | undefined;
     if (dependsOnIndex === undefined) {
       options = [...entry.values];
     } else {
+      // `entries` are the category's own, unfiltered arrays — not a
+      // cascaded, narrowed-down runtime list — so the parent's flat
+      // `values`/`valueKeys` pair is exactly what indexing here needs: the
+      // backend keeps those two arrays aligned index-for-index no matter how
+      // many buckets or branches the parent itself has.
       const parentEntry = entries[dependsOnIndex];
       const parentValue = savedValueByIndex.get(dependsOnIndex);
       const parentOptionIndex = parentValue ? parentEntry.values.indexOf(parentValue) : -1;
       const parentKey =
         parentOptionIndex >= 0 ? parentEntry.valueKeys?.[parentOptionIndex] : undefined;
       options = parentKey ? entry.valuesByParent?.[parentKey] ?? [] : [];
+      activeParentKey = parentKey;
     }
 
     const otherValue =
@@ -198,6 +219,14 @@ export function hydrateListingParametersFromApi(
       ...(dependsOnIndex !== undefined ? { dependsOnIndex } : {}),
       ...(entry.valueKeys ? { valueKeys: entry.valueKeys } : {}),
       ...(entry.valuesByParent ? { valuesByParent: entry.valuesByParent } : {}),
+      ...(entry.valueKeysByParent ? { valueKeysByParent: entry.valueKeysByParent } : {}),
+      // Remembers which of THIS entry's own buckets is currently active, so
+      // that if the seller picks a new value here after opening the listing,
+      // cascadeParameterDependents can resolve a further, grandchild
+      // parameter's bucket correctly — see the comment there for why the
+      // flat valueKeys can't be used for that once options is a narrowed
+      // subset rather than the full list.
+      ...(activeParentKey ? { activeParentKey } : {}),
     };
   });
 

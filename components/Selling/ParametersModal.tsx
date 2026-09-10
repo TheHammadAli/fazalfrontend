@@ -27,23 +27,45 @@ export type parameterTypes = {
    *  user-added ("Add more") one. Immutable metadata: carried through
    *  unchanged by every helper below, never derived from user input. */
   dependsOnIndex?: number;
-  /** This parameter's own value keys, parallel to `options`/`values` — used
-   *  by whichever LATER parameter depends on this one to look up its bucket
-   *  in that parameter's `valuesByParent`. */
+  /** This parameter's own value keys, parallel to `options`/`values` — only
+   *  ever correctly index-aligned with them when this parameter is NOT
+   *  itself dependent (a top-level parameter like Make). On a dependent
+   *  parameter (Model, Variant), `options` is a narrowed-down subset and this
+   *  flat array is NOT usable to look up a key by position within it — see
+   *  `valueKeysByParent` and `activeParentKey` below, which is what a
+   *  dependent parameter's own children actually resolve against. */
   valueKeys?: string[];
   /** Present only when `dependsOnIndex` is set: parent value key -> this
    *  parameter's options under that parent value. */
   valuesByParent?: Record<string, string[]>;
+  /** Same shape as `valuesByParent`, holding this parameter's own value keys
+   *  instead of display text — bucket by bucket, so a grandchild parameter
+   *  can look up "the key for option N of MY current bucket" instead of "the
+   *  key at position N of the full, unfiltered list", which is wrong for any
+   *  bucket but whichever one happens to start at position 0. */
+  valueKeysByParent?: Record<string, string[]>;
+  /** Transient, cascade-only: which of THIS parameter's own buckets is
+   *  currently supplying `options` — i.e. the parent's chosen value's key.
+   *  Set whenever `options` is (re)computed from `valuesByParent`, and what
+   *  a child reads `valueKeysByParent` through. */
+  activeParentKey?: string;
 };
 
 /** Fields set once at seed/hydrate time from the category definition, never
  *  touched by anything the seller does inside this modal — carried through
  *  unconditionally everywhere a parameter is copied or rebuilt below. */
-function dependencyFields(p: Pick<parameterTypes, "dependsOnIndex" | "valueKeys" | "valuesByParent">) {
+function dependencyFields(
+  p: Pick<
+    parameterTypes,
+    "dependsOnIndex" | "valueKeys" | "valuesByParent" | "valueKeysByParent" | "activeParentKey"
+  >,
+) {
   return {
     ...(p.dependsOnIndex !== undefined ? { dependsOnIndex: p.dependsOnIndex } : {}),
     ...(p.valueKeys ? { valueKeys: p.valueKeys } : {}),
     ...(p.valuesByParent ? { valuesByParent: p.valuesByParent } : {}),
+    ...(p.valueKeysByParent ? { valueKeysByParent: p.valueKeysByParent } : {}),
+    ...(p.activeParentKey ? { activeParentKey: p.activeParentKey } : {}),
   };
 }
 
@@ -151,19 +173,41 @@ export function cascadeParameterDependents(
     const parent = next[entry.dependsOnIndex];
     const parentValue = parent?.variants[0];
     const parentOptionIndex = parentValue ? (parent.options ?? []).indexOf(parentValue) : -1;
-    const parentKey = parentOptionIndex >= 0 ? parent?.valueKeys?.[parentOptionIndex] : undefined;
+
+    // Where to read the parent's key from depends on whether the PARENT
+    // itself is a top-level parameter or a dependent one:
+    //  - top-level (e.g. Make): `options` IS the full list, so its position
+    //    there matches its position in the flat `valueKeys` directly.
+    //  - dependent (e.g. Model, itself narrowed to one Make's models):
+    //    `options` is only a bucket, so the position has to be looked up in
+    //    THAT bucket's own key list (`valueKeysByParent[activeParentKey]`),
+    //    never the flat `valueKeys` — that array covers every make's models
+    //    concatenated, and only lines up by coincidence for whichever make
+    //    happens to occupy its first slots.
+    const parentKey =
+      parentOptionIndex < 0
+        ? undefined
+        : parent.dependsOnIndex !== undefined
+          ? parent.valueKeysByParent?.[parent.activeParentKey ?? ""]?.[parentOptionIndex]
+          : parent.valueKeys?.[parentOptionIndex];
+
     const newOptions = parentKey ? entry.valuesByParent?.[parentKey] ?? [] : [];
 
     const previousOptions = entry.options ?? [];
     const unchanged =
       newOptions.length === previousOptions.length &&
-      newOptions.every((value, index) => value === previousOptions[index]);
+      newOptions.every((value, index) => value === previousOptions[index]) &&
+      parentKey === entry.activeParentKey;
     if (unchanged) continue;
 
     const stillValid = entry.variants.every((value) => newOptions.includes(value));
     next[i] = {
       ...entry,
       options: newOptions,
+      // Remembered so THIS entry's own children (if any depend on it) can
+      // resolve their bucket the same bucket-scoped way, one level further
+      // down the chain.
+      ...(parentKey ? { activeParentKey: parentKey } : { activeParentKey: undefined }),
       ...(stillValid ? {} : { variants: [], otherValue: undefined }),
     };
   }
