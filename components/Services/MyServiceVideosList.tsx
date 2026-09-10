@@ -8,8 +8,9 @@ import {
 import Modal from "../Ui/Modals/Modal";
 import { BeatLoader } from "react-spinners";
 import toast from "react-hot-toast";
-import { Trash2 } from "lucide-react";
+import { Trash2, Plus } from "lucide-react";
 import ProductSkeleton from "../Selling/ProductsSkelton";
+import PostServiceVideoModal from "./PostServiceVideoModal";
 
 // Same click-to-toggle play/pause pattern as the shop's video list
 // (components/Selling/ShopVideosList.tsx) for a consistent small-grid feel.
@@ -69,6 +70,7 @@ function MyServiceVideosList() {
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [deleteServiceVideoPost, { isLoading: isDeleteLoading }] =
     useDeleteServiceVideoPostMutation();
+  const [postVideoModal, setPostVideoModal] = useState(false);
 
   const loading = isLoading || isFetching;
   const videoPosts = videoPostsResponse?.data ?? [];
@@ -85,8 +87,6 @@ function MyServiceVideosList() {
         toast.error(err?.data?.message || error_messages.something_went_wrong);
       });
   };
-
-  if (!loading && videoPosts.length === 0) return null;
 
   return (
     <div className="mt-4 w-full">
@@ -123,11 +123,28 @@ function MyServiceVideosList() {
         </div>
       </Modal>
 
-      <h3 className="text-[15px] font-medium text-black-1 mb-2">
-        {placeholders.my_videos}
-      </h3>
+      <PostServiceVideoModal open={postVideoModal} setOpen={setPostVideoModal} />
+
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-[15px] font-medium text-black-1">
+          {placeholders.my_videos}
+        </h3>
+        <button
+          type="button"
+          onClick={() => setPostVideoModal(true)}
+          className="flex items-center gap-1 cursor-pointer text-[14px] font-medium text-green-1"
+        >
+          <Plus className="h-4 w-4" />
+          {placeholders.post_video}
+        </button>
+      </div>
 
       {loading && <ProductSkeleton />}
+      {!loading && videoPosts.length === 0 && (
+        <div className="flex h-[20vh] w-full items-center justify-center text-black-1">
+          {placeholders.no_videos_posted_yet}
+        </div>
+      )}
       {!loading && videoPosts.length > 0 && (
         <div className="grid grid-cols-2 xl:grid-cols-5 gap-2 md:gap-5">
           {videoPosts.map((post: any) => {

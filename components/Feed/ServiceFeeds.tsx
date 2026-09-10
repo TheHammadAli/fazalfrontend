@@ -27,6 +27,8 @@ type ServiceFeedItem = {
     sharesCount?: number;
     isLiked?: boolean;
     isVideoPost?: boolean;
+    // Only ever populated on a video post — the real listing it promotes.
+    taggedProductId?: { id?: string; _id?: string; price?: number } | null;
 };
 
 type FeedResponseMeta = {
@@ -75,11 +77,17 @@ function ServiceFeeds() {
                     const videoUrl = pickVideoUrl(service);
                     const ownerId = resolveFeedEntityId(service.ownerId);
                     const ownerEntity = ownerId ? service.ownerId : null;
+                    // Same "no real price" rule as products: a video post's
+                    // own price is nominal, and a real service can genuinely
+                    // have no price at all ("call for price").
+                    const taggedProduct = service.isVideoPost ? service.taggedProductId : null;
+                    const displayPrice = service.isVideoPost ? taggedProduct?.price : service.price;
                     return {
                         id: service._id ?? service.id ?? "",
                         video: videoUrl,
                         title: service.title ?? "",
-                        price: String(service.price ?? 0),
+                        price: displayPrice ? String(displayPrice) : "",
+                        taggedProductId: taggedProduct?.id ?? taggedProduct?._id ?? undefined,
                         category: normalizeCategory(service.category),
                         ownerId: ownerId || undefined,
                         ownerName: ownerId

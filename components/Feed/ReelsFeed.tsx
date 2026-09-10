@@ -19,6 +19,8 @@ export type ReelItem = {
     isLiked?: boolean;
     sharesCount?: number;
     isVideoPost?: boolean;
+    /** Only meaningful on a video post: the real listing it promotes. */
+    taggedProductId?: string;
 };
 
 type ReelsFeedProps = {

@@ -33,6 +33,10 @@ type ProductFeedItem = {
     isLiked?: boolean;
     liked?: boolean;
     isFavorite?: boolean;
+    // Only ever populated on a video post — the real listing it promotes.
+    // The backend puts either the populated {id,title,images,price} object
+    // here, or nothing at all, never a bare id string.
+    taggedProductId?: { id?: string; _id?: string; price?: number } | null;
 };
 
 type FeedResponseMeta = {
@@ -83,11 +87,17 @@ function ProductFeeds() {
                     const ownerId = resolveFeedEntityId(product.ownerId);
                     const shopEntity = shopId ? product.shopId : null;
                     const ownerEntity = !shopId && ownerId ? product.ownerId : null;
+                    // A video post's own `price` is a nominal 0, never a real
+                    // price to show — the tagged product's price (if any) is
+                    // the only price that ever means anything here.
+                    const taggedProduct = product.isVideoPost ? product.taggedProductId : null;
+                    const displayPrice = product.isVideoPost ? taggedProduct?.price : product.price;
                     return {
                         id: product._id ?? product.id ?? "",
                         video: videoUrl,
                         title: product.title ?? "",
-                        price: String(product.price ?? 0),
+                        price: displayPrice ? String(displayPrice) : "",
+                        taggedProductId: taggedProduct?.id ?? taggedProduct?._id ?? undefined,
                         category: normalizeCategory(product.category),
                         shopId: shopId || undefined,
                         shopName: shopId

@@ -42,6 +42,9 @@ export default function ReelItem({
     const [isPlaying, setIsPlaying] = useState(false);
     const [duration, setDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
+    // Caption starts clamped so a long one doesn't cover the video; tapping
+    // it reveals the rest instead of it always taking up full space.
+    const [captionExpanded, setCaptionExpanded] = useState(false);
     // Seeded from the item the API already resolved for this user, so the heart
     // is correct on first paint instead of starting false and flipping later.
     const [isLiked, setIsLiked] = useState(!!item.isLiked);
@@ -49,9 +52,16 @@ export default function ReelItem({
     const [sharesCount, setSharesCount] = useState(item.sharesCount ?? 0);
     const feedType = type === "products" ? "product" : "service";
     // A video-only shop post isn't a real sellable product — send viewers to the
-    // shop instead of a product detail page that has no real price/category.
+    // shop instead of a product detail page that has no real price/category,
+    // UNLESS it tags one of the shop's own listings, in which case that's the
+    // real destination (and the only price ever shown for a video post).
     const isShopVideoPost = type === "products" && !!item.isVideoPost && !!item.shopId;
-    const ctaLabel = isShopVideoPost ? ph("visit_shop") : type === "products" ? ph("shop_now") : ph("book_now");
+    const hasTaggedProduct = !!item.isVideoPost && !!item.taggedProductId;
+    const ctaLabel = hasTaggedProduct
+        ? ph("shop_now")
+        : isShopVideoPost
+            ? ph("visit_shop")
+            : type === "products" ? ph("shop_now") : ph("book_now");
     // A shop video post carries the internal "Video Post" sentinel category, which
     // means nothing to a viewer — show which shop it came from instead.
     const showShopAsChip = isShopVideoPost && !!item.shopName;
@@ -61,7 +71,9 @@ export default function ReelItem({
     const chipIcon =
         (showShopAsChip ? item.shopImage : getFeedCategoryIcon(item.category)) ?? noImageIcon;
     const goToCta = () => {
-        if (isShopVideoPost) {
+        if (hasTaggedProduct) {
+            router.push(`/buy-product?id=${item.taggedProductId}`);
+        } else if (isShopVideoPost) {
             router.push(`/selling/shop-detail?id=${item.shopId}`);
         } else if (type === "products") {
             router.push(`/buy-product?id=${item.id}`);
@@ -293,9 +305,19 @@ export default function ReelItem({
                             {chipLabel}
                         </div>
                     </div>
-                    <h3 className="text-[16px] font-medium mt-2 ">{item.title}</h3>
+                    <h3
+                        className={`text-[16px] font-medium mt-2 cursor-pointer ${captionExpanded ? "" : "line-clamp-2"}`}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setCaptionExpanded((prev) => !prev);
+                        }}
+                    >
+                        {item.title}
+                    </h3>
                     {item.price ? (
-                        <p className="mt-1 text-[#00D656] font-semibold">Rs {formatPrice(item.price)}</p>
+                        <div className="mt-1.5 inline-flex items-center rounded-full bg-black/45 px-3 py-1 backdrop-blur-sm">
+                            <p className="text-[#00D656] font-semibold text-[14px]">Rs {formatPrice(item.price)}</p>
+                        </div>
                     ) : null}
 
                     <DoodleButton
