@@ -30,10 +30,12 @@ import ServiceRequestSkeleton, {
 import { parsePositiveInt } from "../Updates/Notifications";
 import MyOfferedServiceCard from "./MyOfferedServiceCard";
 import MyServiceVideosList from "./MyServiceVideosList";
+import PostServiceVideoModal from "./PostServiceVideoModal";
 import type { ServiceDetailType } from "./ServiceDetail";
 import myOffersIcon from "@/assets/icons/my-requests.svg";
 import serviceRequestIcon from "@/assets/icons/total-products-icon.svg";
 import chevronRightIcon from "@/assets/icons/chevron-right-icon.svg";
+import { Video, Plus } from "lucide-react";
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const PAGE_LIMIT = 10;
@@ -185,6 +187,11 @@ function OfferedServices() {
     const [activeStatusTab, setActiveStatusTab] =
         useState<StatusTabKey>("pending");
     const [serviceRequestMenuOpen, setServiceRequestMenuOpen] = useState(false);
+    // A view layered on top of the request tabs rather than one of them —
+    // switching to it doesn't touch activeRequestTab/pagination at all, it
+    // just swaps what the results panel shows.
+    const [isMyVideosSelected, setIsMyVideosSelected] = useState(false);
+    const [postVideoModal, setPostVideoModal] = useState(false);
     const [page, setPage] = useState(1);
     const [requestItems, setRequestItems] = useState<ServiceRequestItem[]>([]);
     const [hasMore, setHasMore] = useState(true);
@@ -455,6 +462,7 @@ function OfferedServices() {
 
     const selectRequestTab = useCallback(
         (tab: RequestTabKey) => {
+            setIsMyVideosSelected(false);
             if (tab === "service_request") {
                 if (activeRequestTab === "service_request") {
                     // Toggle Pending/Accepted/Rejected without changing list filter.
@@ -472,6 +480,12 @@ function OfferedServices() {
         },
         [activeRequestTab, scrollToResultsOnMobile],
     );
+
+    const selectMyVideosTab = useCallback(() => {
+        setServiceRequestMenuOpen(false);
+        setIsMyVideosSelected(true);
+        scrollToResultsOnMobile();
+    }, [scrollToResultsOnMobile]);
 
     const selectStatusTab = useCallback(
         (tab: StatusTabKey) => {
@@ -566,6 +580,26 @@ function OfferedServices() {
                 <OfferedServicesPageSkeleton />
             ) : (
             <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col">
+                <PostServiceVideoModal
+                    open={postVideoModal}
+                    setOpen={setPostVideoModal}
+                    onCreated={() => setIsMyVideosSelected(true)}
+                />
+                {/* Not gated on hasMyService — a provider can post any number
+                    of these even without a real service. Kept up top since
+                    creating a video and browsing the ones you've already
+                    posted (the "My Videos" tab below) are two different
+                    actions in two different places. */}
+                <div className="w-full shrink-0 px-0 pt-3 sm:pt-4">
+                    <button
+                        type="button"
+                        onClick={() => setPostVideoModal(true)}
+                        className="flex h-[42px] w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-green-1 bg-white text-[14px] font-medium text-green-1"
+                    >
+                        <Plus className="h-4 w-4" />
+                        {placeholders.post_video}
+                    </button>
+                </div>
                 {hasMyService && myService && (
                     <div className="w-full shrink-0 px-0 pb-4 pt-3 sm:pt-4">
                         <MyOfferedServiceCard serviceData={myService} />
@@ -656,6 +690,29 @@ function OfferedServices() {
                                 </div>
                             );
                         })}
+                        <button
+                            type="button"
+                            onClick={selectMyVideosTab}
+                            className={`flex w-full items-center cursor-pointer gap-3 rounded-[14px] border px-3 py-3 text-start transition-colors ${
+                                isMyVideosSelected
+                                    ? "border-green-1 bg-green-4"
+                                    : "border-gray-9 bg-white"
+                            }`}
+                        >
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-green-4">
+                                <Video className="h-6 w-6 text-[#4B514F]" strokeWidth={2} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <span className="text-[15px] font-semibold text-black-1">
+                                    {placeholders.my_videos}
+                                </span>
+                            </div>
+                            <Image
+                                src={chevronRightIcon}
+                                alt=""
+                                className="h-3.5 w-2.5 shrink-0 rtl:rotate-180"
+                            />
+                        </button>
                     </div>
                 </div>
 
@@ -664,7 +721,9 @@ function OfferedServices() {
                     className="flex min-w-0 flex-1 flex-col scroll-mt-[72px] bg-white lg:min-h-0"
                 >
                     <div className="px-3 sm:px-4 lg:px-6 pt-3 sm:pt-4 flex-1 min-h-0 overflow-y-auto">
-                        {isListInitialLoading ? (
+                        {isMyVideosSelected ? (
+                            <MyServiceVideosList />
+                        ) : isListInitialLoading ? (
                             <ServiceRequestSkeleton count={4} />
                         ) : showEmpty ? (
                             <p className="py-8 text-center text-[15px] font-medium text-gray-8">
@@ -823,13 +882,6 @@ function OfferedServices() {
                         )}
                     </div>
                 </div>
-                </div>
-                {/* Not gated on hasMyService — a provider can post any number
-                    of these even without a real service, so this must stay
-                    reachable either way. Placed last: it's a secondary,
-                    promotional feature, not the main content of this tab. */}
-                <div className="w-full shrink-0 px-3 pb-4 pt-3 sm:px-4 sm:pt-4">
-                    <MyServiceVideosList />
                 </div>
             </div>
             )}

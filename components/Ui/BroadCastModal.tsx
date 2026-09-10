@@ -398,6 +398,11 @@ function BroadCastModal({ setOpenBroadcast }: { setOpenBroadcast: (open: boolean
                                             setAddress("");
                                         }}
                                     />
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-2">
+                                <Image src={chooseLocationIcon} alt="" className="mt-6 h-5 w-5 shrink-0" />
+                                <div className="min-w-0 flex-1">
                                     <LocationSelect
                                         label={info_messages.area ?? "Area"}
                                         value={area}
