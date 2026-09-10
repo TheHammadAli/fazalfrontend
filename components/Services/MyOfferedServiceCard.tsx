@@ -16,6 +16,7 @@ import noImageAvtar from "@/assets/images/no-image-av.png";
 import Modal from "../Ui/Modals/Modal";
 import SharePostModal from "../Ui/SharePostModal";
 import DoodleButton from "@/components/Ui/DoodleButton";
+import PostServiceVideoModal from "./PostServiceVideoModal";
 import type { ServiceDetailType } from "./ServiceDetail";
 
 type Props = {
@@ -27,6 +28,7 @@ function MyOfferedServiceCard({ serviceData }: Props) {
   const { placeholders, currentLanguage, share_post } = useDictionary();
   const sharePostRef = useRef<HTMLDivElement>(null);
   const [shareModal, setShareModal] = useState(false);
+  const [postVideoModal, setPostVideoModal] = useState(false);
   const [mounted] = useState(() => typeof window !== "undefined");
 
   const serviceId = serviceData?.id ?? serviceData?._id;
@@ -71,6 +73,8 @@ function MyOfferedServiceCard({ serviceData }: Props) {
           type="service"
         />
       </Modal>
+
+      <PostServiceVideoModal open={postVideoModal} setOpen={setPostVideoModal} />
 
       <div className="flex w-full flex-col overflow-hidden rounded-[16px] border border-gray-9 bg-white md:flex-row">
         <div className="relative h-[180px] w-full shrink-0 sm:h-[220px] md:h-auto md:min-h-full md:w-[35%]">
@@ -168,6 +172,14 @@ function MyOfferedServiceCard({ serviceData }: Props) {
               {share_post?.share_service ?? "Share service"}
             </button>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setPostVideoModal(true)}
+            className="mt-3 flex h-[42px] w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-green-1 bg-white text-[14px] font-medium text-green-1"
+          >
+            {placeholders.post_video}
+          </button>
 
           <div className="mt-4 flex flex-col gap-3 rounded-[12px] bg-green-4 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0 flex-1">

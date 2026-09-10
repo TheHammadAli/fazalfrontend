@@ -167,6 +167,30 @@ export const profileService = baseApi.injectEndpoints({
       invalidatesTags: ["PRODUCT"],
     }),
 
+    // A service provider's video post — its own routes, not /services.
+    postServiceVideo: build.mutation({
+      query: (formData: FormData) => ({
+        url: `/service-video-posts`,
+        method: "POST",
+        body: formData,
+      }),
+      invalidatesTags: ["SERVICES"],
+    }),
+    getMyServiceVideoPosts: build.query({
+      query: () => ({
+        url: `/service-video-posts/mine`,
+        method: "GET",
+      }),
+      providesTags: ["SERVICES"],
+    }),
+    deleteServiceVideoPost: build.mutation({
+      query: (id: string) => ({
+        url: `/service-video-posts/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["SERVICES"],
+    }),
+
     orderProduct: build.mutation({
       query: (body) => ({
         url: "/orders",
@@ -393,6 +417,9 @@ export const {
   usePostVideoMutation,
   useGetShopVideoPostsQuery,
   useDeleteVideoPostMutation,
+  usePostServiceVideoMutation,
+  useGetMyServiceVideoPostsQuery,
+  useDeleteServiceVideoPostMutation,
   useGetShopDetailQuery,
   useTrackShopViewMutation,
   useTrackShopProductViewMutation,

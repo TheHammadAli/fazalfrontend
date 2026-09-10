@@ -3,42 +3,43 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
 import Modal from "../Ui/Modals/Modal";
-import ChooseVideoTab from "../Services/ChooseVideoTab";
+import ChooseVideoTab from "./ChooseVideoTab";
 import DoodleButton from "@/components/Ui/DoodleButton";
 import { BeatLoader } from "react-spinners";
 import toast from "react-hot-toast";
 import {
-  usePostVideoMutation,
-  useGetShopProductsQuery,
+  usePostServiceVideoMutation,
+  useGetUserProductsQuery,
 } from "@/store/services/sellingService";
+import { getUserId } from "@/utils/getUserId";
 import noImageAvtar from "@/assets/images/no-image-av.png";
 
 interface Props {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  shopId: string;
   onCreated?: () => void;
 }
 
-interface ShopProduct {
+interface OwnProduct {
   id: string;
   title: string;
   images: string[];
 }
 
-function PostVideoModal({ open, setOpen, shopId, onCreated }: Props) {
+function PostServiceVideoModal({ open, setOpen, onCreated }: Props) {
   const { placeholders, error_messages } = useDictionary();
   const modalRef = React.useRef<HTMLDivElement>(null);
+  const userId = getUserId() ?? "";
   const [video, setVideo] = useState<File | null | string>(null);
   const [caption, setCaption] = useState("");
   const [captionError, setCaptionError] = useState("");
   const [taggedProductId, setTaggedProductId] = useState("");
-  const [postVideo, { isLoading, isSuccess, isError, data, error }] =
-    usePostVideoMutation();
-  const { data: shopProducts } = useGetShopProductsQuery(shopId, {
-    skip: !open || !shopId,
+  const [postServiceVideo, { isLoading, isSuccess, isError, data, error }] =
+    usePostServiceVideoMutation();
+  const { data: userProducts } = useGetUserProductsQuery(userId, {
+    skip: !open || !userId,
   });
-  const products: ShopProduct[] = shopProducts?.data ?? [];
+  const products: OwnProduct[] = userProducts?.data ?? [];
 
   useEffect(() => {
     if (!open) {
@@ -84,7 +85,7 @@ function PostVideoModal({ open, setOpen, shopId, onCreated }: Props) {
       formData.append("taggedProductId", taggedProductId);
     }
 
-    postVideo({ shopId, formData });
+    postServiceVideo(formData);
   };
 
   return (
@@ -166,4 +167,4 @@ function PostVideoModal({ open, setOpen, shopId, onCreated }: Props) {
   );
 }
 
-export default PostVideoModal;
+export default PostServiceVideoModal;
