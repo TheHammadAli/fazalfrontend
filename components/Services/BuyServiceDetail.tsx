@@ -559,9 +559,6 @@ function BuyServiceDetail({
                   <h4 className="text-[14px] text-[#030303]">
                     {service?.data?.ownerId ? ownerData?.name : ""}
                   </h4>
-                  <h4 className="text-[14px] font-light text-[#4B514F]">
-                    {service?.data?.ownerId ? ownerData?.email : ""}
-                  </h4>
                 </div>
               </div>
 
@@ -619,9 +616,6 @@ function BuyServiceDetail({
                         <div>
                           <h4 className="text-[14px] text-[#030303]">
                             {service?.data?.ownerId ? ownerData?.name : ""}
-                          </h4>
-                          <h4 className="text-[14px] font-light text-[#4B514F]">
-                            {service?.data?.ownerId ? ownerData?.email : ""}
                           </h4>
                         </div>
                       </div>
