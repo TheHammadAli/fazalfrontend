@@ -9,6 +9,7 @@ import redCross from "@/assets/icons/red-cross-icon.svg";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
 import DoodleButton from "@/components/Ui/DoodleButton";
 import Footer from "./Footer";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
 export type PasswordEntryFormVariant = "change" | "reset";
 
@@ -137,12 +138,18 @@ function PasswordEntryForm({
                 }
                 className="h-[28px] text-[14px] text-gray-8 font-normal focus:outline-none w-full rtl:text-right ltr:text-left placeholder:text-gray-8"
               />
-              <span
+              <button
+                type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="text-[14px] font-medium text-black-1 cursor-pointer underline"
+                aria-label={showPassword ? placeholders.hide : placeholders.show}
+                className="cursor-pointer text-gray-8"
               >
-                {showPassword ? placeholders.hide : placeholders.show}
-              </span>
+                {showPassword ? (
+                  <EyeSlashIcon className="h-5 w-5" />
+                ) : (
+                  <EyeIcon className="h-5 w-5" />
+                )}
+              </button>
             </div>
             <p className="text-red-1 text-[14px] font-normal -mt-1 rtl:text-right ltr:text-left">
               {passwordError}
@@ -210,12 +217,18 @@ function PasswordEntryForm({
                 }
                 className="h-[28px] text-[14px] text-gray-8 font-normal focus:outline-none w-full rtl:text-right ltr:text-left placeholder:text-gray-8"
               />
-              <span
+              <button
+                type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="text-[14px] font-medium text-black-1 cursor-pointer underline"
+                aria-label={showConfirmPassword ? placeholders.hide : placeholders.show}
+                className="cursor-pointer text-gray-8"
               >
-                {showConfirmPassword ? placeholders.hide : placeholders.show}
-              </span>
+                {showConfirmPassword ? (
+                  <EyeSlashIcon className="h-5 w-5" />
+                ) : (
+                  <EyeIcon className="h-5 w-5" />
+                )}
+              </button>
             </div>
 
             {confirmPasswordError && (

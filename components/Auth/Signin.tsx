@@ -16,6 +16,7 @@ import {
 import { baseApi } from "@/store/baseApi";
 import { BASE_URL } from "@/assets/content/constants";
 import GoogleIcon from "@/assets/icons/google-icon.svg";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import DoodleButton from "@/components/Ui/DoodleButton";
 import Footer from "./Footer";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
@@ -203,12 +204,18 @@ function Signin() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="h-[28px] w-full focus:outline-none"
               />
-              <span
+              <button
+                type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="cursor-pointer underline"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                className="cursor-pointer text-gray-8"
               >
-                {showPassword ? "Hide" : "Show"}
-              </span>
+                {showPassword ? (
+                  <EyeSlashIcon className="h-5 w-5" />
+                ) : (
+                  <EyeIcon className="h-5 w-5" />
+                )}
+              </button>
             </div>
             {passwordError && (
               <p className="text-red-1 text-[14px]">{passwordError}</p>

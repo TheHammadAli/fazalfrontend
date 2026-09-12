@@ -10,6 +10,7 @@ import { setConfirmPwd, setOtpInfo } from "@/store/reducers/authReducer";
 import AuthImagePanel from "./AuthImagePanel";
 import Footer from "./Footer";
 import DoodleButton from "@/components/Ui/DoodleButton";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 export type Body = {
   email?: string;
   phoneNumber?: string;
@@ -141,12 +142,18 @@ function SetPassword() {
                   }
                   className={`h-[28px] text-[14px] text-gray-8  font-normal focus:outline-none w-full  `}
                 />
-                <span
+                <button
+                  type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="text-[14px] font-medium text-black-1 cursor-pointer underline"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="cursor-pointer text-gray-8"
                 >
-                  {showPassword ? "Hide" : "Show"}
-                </span>
+                  {showPassword ? (
+                    <EyeSlashIcon className="h-5 w-5" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5" />
+                  )}
+                </button>
               </div>
               <p className="text-red-1 text-[14px] font-normal -mt-1">
                 {passwordError}
@@ -223,12 +230,18 @@ function SetPassword() {
                   }
                   className={`h-[28px] text-[14px] text-gray-8  font-normal focus:outline-none w-full  `}
                 />
-                <span
+                <button
+                  type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="text-[14px] font-medium text-black-1 cursor-pointer underline"
+                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  className="cursor-pointer text-gray-8"
                 >
-                  {showConfirmPassword ? "Hide" : "Show"}
-                </span>
+                  {showConfirmPassword ? (
+                    <EyeSlashIcon className="h-5 w-5" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5" />
+                  )}
+                </button>
               </div>
 
               {confirmPasswordError && (
