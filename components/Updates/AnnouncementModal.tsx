@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import Image from "next/image";
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import { MegaphoneIcon } from "@heroicons/react/24/solid";
 import Modal from "@/components/Ui/Modals/Modal";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
 import { getYouTubeEmbedUrl } from "@/utils/getYouTubeEmbedUrl";
@@ -53,7 +54,13 @@ function AnnouncementModal({
   return (
     <Modal editModalRef={modalRef} open={open} setOpen={onClose} centered>
       <div className="hide-scrollbar flex max-h-[90vh] w-[92vw] max-w-[480px] flex-col overflow-y-auto rounded-[16px] bg-white">
-        <div className="flex items-start justify-between gap-4 px-5 pt-5">
+        <div className="px-5 pt-5">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-orange-500">
+            <MegaphoneIcon className="h-3.5 w-3.5" />
+            {ph("important_message_from_admin")}
+          </span>
+        </div>
+        <div className="flex items-start justify-between gap-4 px-5 pt-3">
           <h2 className="text-[18px] font-semibold leading-snug text-black-1">
             {title}
           </h2>
