@@ -20,6 +20,7 @@ import {
   useGetShopDetailQuery,
   useUpdateShopMutation,
 } from "@/store/services/sellingService";
+import TimePicker from "@/components/Ui/TimePicker";
 import { useRouter, useSearchParams } from "next/navigation";
 import Modal from "../Ui/Modals/Modal";
 import CategoryModal, { categroyTypes } from "../Services/CategoryModal";
@@ -678,23 +679,13 @@ function UpdateShop() {
                 <p className="text-[12px] font-normal text-gray-8">
                   {info_messages["opens_at" as keyof typeof info_messages] ?? "Opens at"}
                 </p>
-                <input
-                  type="time"
-                  value={openFrom}
-                  onChange={(e) => setOpenFrom(e.target.value)}
-                  className="h-[28px] w-full border-b-[1px] border-gray-9 text-[15px] font-normal text-black-1 focus:outline-none"
-                />
+                <TimePicker value={openFrom} onChange={setOpenFrom} />
               </div>
               <div className="w-full">
                 <p className="text-[12px] font-normal text-gray-8">
                   {info_messages["closes_at" as keyof typeof info_messages] ?? "Closes at"}
                 </p>
-                <input
-                  type="time"
-                  value={openTo}
-                  onChange={(e) => setOpenTo(e.target.value)}
-                  className="h-[28px] w-full border-b-[1px] border-gray-9 text-[15px] font-normal text-black-1 focus:outline-none"
-                />
+                <TimePicker value={openTo} onChange={setOpenTo} />
               </div>
             </div>
             {openingHoursError && (
