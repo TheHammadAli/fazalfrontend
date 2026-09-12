@@ -48,6 +48,11 @@ interface CategoryModalRef {
     React.SetStateAction<categroyTypes | null>
   >;
   type?: string;
+  /** When given (non-empty), only categories whose id appears here are
+   *  shown — a shop filed under a shop-type category (which groups several
+   *  product categories, e.g. "Vehicle" -> Car, Bike) may only list
+   *  products in one of its own group, not every category of `type`. */
+  allowedIds?: string[];
 }
 
 export function getCategoryParameterEntries(
@@ -251,6 +256,7 @@ function CategoryModal({
   selectedCategory,
   setSelectedCategory,
   type,
+  allowedIds,
 }: CategoryModalRef) {
   const { placeholders, error_messages, currentLanguage } = useDictionary();
   const {
@@ -260,6 +266,12 @@ function CategoryModal({
   } = useCategoriesQuery({
     ...(type ? { type: type, lang: currentLanguage } : {}),
   });
+
+  const visibleCategories = React.useMemo(() => {
+    const list = (categories?.data ?? []) as categroyTypes[];
+    if (!allowedIds || allowedIds.length === 0) return list;
+    return list.filter((category) => allowedIds.includes(category._id));
+  }, [categories?.data, allowedIds]);
 
   return (
     <div className="h-[470px] w-[456px] overflow-scroll rounded-[10px] bg-[white] hide-scrollbar">
@@ -279,9 +291,9 @@ function CategoryModal({
       <div className="z-20 w-full">
         {isCategoriesLoading || isCategoriesFetching ? (
           <CategoriesSkeleton />
-        ) : categories?.data?.length > 0 ? (
+        ) : visibleCategories.length > 0 ? (
           <>
-            {categories?.data?.map((category: categroyTypes, index: number) => (
+            {visibleCategories.map((category: categroyTypes, index: number) => (
               <div
                 onClick={() => {
                   setSelectedCategory(category);

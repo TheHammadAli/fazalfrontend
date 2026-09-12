@@ -157,13 +157,12 @@ function ListProduct() {
     if (!isShopListing || !shopCategoryId) return null;
     // Resolved against the full list rather than taken from the shop, because
     // the shop carries only {id, name} and the parameters below need the whole
-    // record. A shop is now filed under a shop-type category (grouping
-    // several product categories, e.g. "Vehicle" -> Car, Bike), which is never
-    // in this product-only list — so this always comes up empty and leaves
-    // the normal, unlocked picker in place. The server still enforces the
-    // listing's category is one of the shop's group
-    // (assertCategoryAllowedForShop); a picker constrained to just that group
-    // instead of every product category is a possible future improvement.
+    // record. A shop filed under a shop-type category (grouping several
+    // product categories, e.g. "Vehicle" -> Car, Bike) is never in this
+    // product-only list, so this comes up empty for one — that's fine, it's
+    // handled by groupedCategoryIds below instead. This lock only fires for a
+    // shop still filed directly under one plain product category (the
+    // pre-grouping shape).
     const list = (productCategories?.data ?? []) as categroyTypes[];
     return (
       list.find(
@@ -174,6 +173,19 @@ function ListProduct() {
   }, [isShopListing, shopCategoryId, productCategories?.data]);
 
   const isCategoryLocked = lockedShopCategory !== null;
+
+  // A shop filed under a shop-type category may list products in any of the
+  // product categories it groups — not every category of type "product".
+  // Server-enforced already (assertCategoryAllowedForShop); this scopes the
+  // picker to match instead of leaving it open to everything.
+  const shopGroupedCategoryIds: string[] = useMemo(() => {
+    if (!isShopListing || isCategoryLocked) return [];
+    const category = shop?.data?.category as
+      | { type?: string; groupedCategoryIds?: string[] }
+      | undefined;
+    if (category?.type !== "shop") return [];
+    return category.groupedCategoryIds ?? [];
+  }, [isShopListing, isCategoryLocked, shop?.data?.category]);
   // Between the shop arriving and its category resolving, the picker would
   // briefly accept a choice this form is about to overwrite. Hold it shut.
   const isCategoryPending =
@@ -388,6 +400,7 @@ function ListProduct() {
             selectedCategory={selectedCategory}
             setSelectedCategory={setSelectedCategory}
             type="product"
+            allowedIds={shopGroupedCategoryIds}
           />
         </div>
       </Modal>

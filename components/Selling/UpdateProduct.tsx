@@ -122,12 +122,10 @@ function UpdateProduct() {
 
   const lockedShopCategory = useMemo(() => {
     if (!shopCategoryId) return null;
-    // A shop is now filed under a shop-type category (grouping several
-    // product categories, e.g. "Vehicle" -> Car, Bike), never itself a
-    // product category, so this always misses and the picker stays
-    // available rather than leaving the listing uneditable. The server
-    // still enforces the chosen category is one of the shop's group
-    // (assertCategoryAllowedForShop).
+    // This only matches a shop still filed directly under one plain product
+    // category (the pre-grouping shape). A shop filed under a shop-type
+    // category (grouping several product categories, e.g. "Vehicle" -> Car,
+    // Bike) is handled by shopGroupedCategoryIds below instead.
     const list = (categoriesData?.data ?? []) as categroyTypes[];
     return (
       list.find(
@@ -140,6 +138,19 @@ function UpdateProduct() {
   const lockedCategoryLabel = lockedShopCategory
     ? getFeedCategoryLabel(lockedShopCategory.name, currentLanguage)
     : "";
+
+  // A shop filed under a shop-type category may list products in any of the
+  // product categories it groups — not every category of type "product".
+  // Server-enforced already (assertCategoryAllowedForShop); this scopes the
+  // picker to match instead of leaving it open to everything.
+  const shopGroupedCategoryIds: string[] = useMemo(() => {
+    if (lockedShopCategory) return [];
+    const category = productData?.shopId?.category as
+      | { type?: string; groupedCategoryIds?: string[] }
+      | undefined;
+    if (category?.type !== "shop") return [];
+    return category.groupedCategoryIds ?? [];
+  }, [lockedShopCategory, productData?.shopId?.category]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -340,6 +351,7 @@ function UpdateProduct() {
             selectedCategory={selectedCategory}
             setSelectedCategory={setSelectedCategory}
             type="product"
+            allowedIds={shopGroupedCategoryIds}
           />
         </div>
       </Modal>
