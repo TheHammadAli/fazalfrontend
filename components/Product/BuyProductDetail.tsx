@@ -538,7 +538,7 @@ function BuyProductDetail({
           <div className="">
             <div className="flex  flex-col sm:flex-row gap-8">
               <div className="space-y-2 w-full md:w-[52%]">
-                <div className="relative   h-[220px]  sm:h-[320px] md:h-[500px] overflow-hidden rounded-[10px]">
+                <div className="relative   h-[220px]  sm:h-[320px] md:h-[500px] overflow-hidden rounded-[10px] bg-gray-12">
                   {type === "image" || !videoSrc ? (
                     <button
                       type="button"
@@ -560,7 +560,7 @@ function BuyProductDetail({
                         width={100}
                         unoptimized
                         alt="product"
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-contain"
                       />
                     </button>
                   ) : (
@@ -618,10 +618,10 @@ function BuyProductDetail({
                           setTypeIndex(index);
                           setType("image");
                         }}
-                        className={`rounded-[10px] border-[1px]  overflow-hidden  cursor-pointer ${typeIndex === index && type === "image"
+                        className={`rounded-[10px] border-[1px]  overflow-hidden  cursor-pointer bg-gray-12 ${typeIndex === index && type === "image"
                           ? " border-green-1"
                           : "border-transparent"
-                          } h-[96px] w-[96px] md:w-[154px] object-cover`}
+                          } h-[96px] w-[96px] md:w-[154px]`}
                       >
                         <Image
                           src={image}
@@ -629,7 +629,7 @@ function BuyProductDetail({
                           width={100}
                           alt="product"
                           unoptimized
-                          className="h-[96px] w-[96px] md:w-[154px] object-cover  "
+                          className="h-[96px] w-[96px] md:w-[154px] object-contain"
                         />
                       </div>
                     ),

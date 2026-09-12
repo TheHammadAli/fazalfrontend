@@ -88,6 +88,10 @@ type CatalogCardProps = {
     currencyLabel: string;
     onSelect: (itemId: string) => void;
     shouldSuppressClick: () => boolean;
+    // Products show the whole image (never crop it) since buyers judge a
+    // listing by its exact photo; services keep filling the tile since a
+    // service thumbnail is illustrative, not the thing being sold.
+    imageFit: "cover" | "contain";
 };
 
 function CatalogCard({
@@ -95,6 +99,7 @@ function CatalogCard({
     currencyLabel,
     onSelect,
     shouldSuppressClick,
+    imageFit,
 }: CatalogCardProps) {
     const { placeholders } = useDictionary();
     const itemId = item.id || item._id;
@@ -122,7 +127,9 @@ function CatalogCard({
                     height={100}
                     width={100}
                     draggable={false}
-                    className="pointer-events-none h-full w-full select-none bg-gray-12 object-cover transition-transform duration-300 ease-out group-hover:scale-105"
+                    className={`pointer-events-none h-full w-full select-none bg-gray-12 transition-transform duration-300 ease-out group-hover:scale-105 ${
+                        imageFit === "contain" ? "object-contain" : "object-cover"
+                    }`}
                     unoptimized
                 />
             </div>
@@ -391,6 +398,7 @@ function AllProductsAndServices({
                         currencyLabel={placeholders.Rs}
                         onSelect={handleSelectItem}
                         shouldSuppressClick={shouldSuppressClick}
+                        imageFit={activeTab === "products" ? "contain" : "cover"}
                     />
                 </SwiperSlide>
             );
@@ -406,6 +414,7 @@ function AllProductsAndServices({
 
         return slides;
     }, [
+        activeTab,
         handleSelectItem,
         isInitialLoading,
         isLoadingMore,
