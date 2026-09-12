@@ -45,6 +45,16 @@
   display: none;
 }
 
+/* Scrollbars hidden site-wide — every scrollable element, not just the ones
+   opted into .hide-scrollbar above. Scrolling itself is unaffected. */
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
 .truncate-safe {
   display: block;
   min-width: 0;
