@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useGetAllServicesFeedQuery } from "@/store/services/feedService";
+import { useGetServiceDetailQuery } from "@/store/services/sellingService";
 import { getUserId } from "@/utils/getUserId";
 import ReelsFeed, { type ReelItem } from "./ReelsFeed";
 import {
@@ -59,7 +60,45 @@ function normalizeCategory(category: unknown): ReelItem["category"] {
     return "";
 }
 
-function ServiceFeeds() {
+function mapServiceFeedItem(service: ServiceFeedItem): ReelItem {
+    const videoUrl = pickVideoUrl(service);
+    const ownerId = resolveFeedEntityId(service.ownerId);
+    const ownerEntity = ownerId ? service.ownerId : null;
+    // Same "no real price" rule as products: a video post's
+    // own price is nominal, and a real service can genuinely
+    // have no price at all ("call for price").
+    const taggedProduct = service.isVideoPost ? service.taggedProductId : null;
+    const displayPrice = service.isVideoPost ? taggedProduct?.price : service.price;
+    return {
+        id: service._id ?? service.id ?? "",
+        video: videoUrl,
+        title: service.title ?? "",
+        price: displayPrice ? String(displayPrice) : "",
+        taggedProductId: taggedProduct?.id ?? taggedProduct?._id ?? undefined,
+        category: normalizeCategory(service.category),
+        ownerId: ownerId || undefined,
+        ownerName: ownerId
+            ? resolveFeedEntityName(ownerEntity as any)
+            : undefined,
+        ownerImage: resolveFeedEntityImage(ownerEntity as any),
+        likesCount: service.likesCount ?? 0,
+        sharesCount: service.sharesCount ?? 0,
+        isLiked: !!service.isLiked,
+        isVideoPost: !!service.isVideoPost,
+    };
+}
+
+type ServiceFeedsProps = {
+    // Set when arriving via "My Videos" -> tap a video, so the feed opens
+    // pinned to that one post instead of the normal top of the feed.
+    focusPostId?: string;
+    // Called once the pinned post has actually been fetched and shown, so
+    // the parent can forget it — otherwise switching away from this tab and
+    // back would remount this component and jump back to the same post again.
+    onFocusConsumed?: () => void;
+};
+
+function ServiceFeeds({ focusPostId, onFocusConsumed }: ServiceFeedsProps) {
     const { placeholders } = useDictionary();
     const userId = getUserId() ?? "";
     const LIMIT = 10;
@@ -69,37 +108,28 @@ function ServiceFeeds() {
     const { data: servicesFeed, isLoading, isFetching } = useGetAllServicesFeedQuery({ page, limit: LIMIT, userId });
     const isInitialLoading = services.length === 0 && (isLoading || isFetching);
 
+    const [focusItem, setFocusItem] = useState<ReelItem | null>(null);
+    const { data: focusServiceResponse } = useGetServiceDetailQuery(focusPostId ?? "", {
+        skip: !focusPostId,
+    });
+
+    useEffect(() => {
+        if (!focusPostId) {
+            setFocusItem(null);
+            return;
+        }
+        const raw = focusServiceResponse?.data as ServiceFeedItem | undefined;
+        if (!raw) return;
+        setFocusItem(mapServiceFeedItem(raw));
+        onFocusConsumed?.();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [focusPostId, focusServiceResponse]);
+
     useEffect(() => {
         const response = (servicesFeed as FeedResponse | undefined) ?? undefined;
         const mapped: ReelItem[] =
             response?.data
-                ?.map((service: ServiceFeedItem) => {
-                    const videoUrl = pickVideoUrl(service);
-                    const ownerId = resolveFeedEntityId(service.ownerId);
-                    const ownerEntity = ownerId ? service.ownerId : null;
-                    // Same "no real price" rule as products: a video post's
-                    // own price is nominal, and a real service can genuinely
-                    // have no price at all ("call for price").
-                    const taggedProduct = service.isVideoPost ? service.taggedProductId : null;
-                    const displayPrice = service.isVideoPost ? taggedProduct?.price : service.price;
-                    return {
-                        id: service._id ?? service.id ?? "",
-                        video: videoUrl,
-                        title: service.title ?? "",
-                        price: displayPrice ? String(displayPrice) : "",
-                        taggedProductId: taggedProduct?.id ?? taggedProduct?._id ?? undefined,
-                        category: normalizeCategory(service.category),
-                        ownerId: ownerId || undefined,
-                        ownerName: ownerId
-                            ? resolveFeedEntityName(ownerEntity as any)
-                            : undefined,
-                        ownerImage: resolveFeedEntityImage(ownerEntity as any),
-                        likesCount: service.likesCount ?? 0,
-                        sharesCount: service.sharesCount ?? 0,
-                        isLiked: !!service.isLiked,
-                        isVideoPost: !!service.isVideoPost,
-                    };
-                })
+                ?.map(mapServiceFeedItem)
                 .filter((item) => !!item.video) ?? [];
 
         setServices((prev) => {
@@ -116,6 +146,13 @@ function ServiceFeeds() {
         if (isFetching || !hasMore) return;
         setPage((prev) => prev + 1);
     };
+
+    // The pinned deep-linked post always leads, regardless of whether/when it
+    // also shows up in the normal paginated list (dedupe by id either way).
+    const reels = focusItem
+        ? [focusItem, ...services.filter((item) => item.id !== focusItem.id)]
+        : services;
+
     return (
         <div className="flex h-full min-h-0 w-full justify-center">
             <div className="h-full min-h-0 w-full max-w-full lg:max-w-[456px]">
@@ -123,7 +160,7 @@ function ServiceFeeds() {
                     Array.from({ length: 2 }).map((_, index) => (
                         <div key={index} className="h-[620px] w-full animate-pulse rounded-[8px] bg-gray-200" />
                     ))
-                ) : services.length === 0 ? (
+                ) : reels.length === 0 ? (
                     <div className="flex h-full min-h-[60vh] flex-col items-center justify-center px-6 text-center">
                         <Image src={noFeedIcon} alt="no-feed" />
                         <h3 className="mt-3 text-[22px] font-medium text-black-1">
@@ -137,7 +174,7 @@ function ServiceFeeds() {
                 ) : (
                     <ReelsFeed
                         type="services"
-                        reels={services}
+                        reels={reels}
                         onEndReached={handleEndReached}
                         isLoadingMore={isFetching && page > 1}
                     />

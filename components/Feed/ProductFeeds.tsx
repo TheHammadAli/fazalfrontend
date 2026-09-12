@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useGetAllProductsFeedQuery } from "@/store/services/feedService";
+import { useGetProductDetailQuery } from "@/store/services/homeService";
 import { getUserId } from "@/utils/getUserId";
 import ReelsFeed, { type ReelItem } from "./ReelsFeed";
 import {
@@ -67,7 +68,56 @@ function normalizeCategory(category: unknown): ReelItem["category"] {
     return "";
 }
 
-function ProductFeeds() {
+function mapProductFeedItem(product: ProductFeedItem): ReelItem {
+    const videoUrl = pickVideoUrl(product);
+    const shopId = resolveFeedEntityId(product.shopId);
+    const ownerId = resolveFeedEntityId(product.ownerId);
+    const shopEntity = shopId ? product.shopId : null;
+    const ownerEntity = !shopId && ownerId ? product.ownerId : null;
+    // A video post's own `price` is a nominal 0, never a real
+    // price to show — the tagged product's price (if any) is
+    // the only price that ever means anything here.
+    const taggedProduct = product.isVideoPost ? product.taggedProductId : null;
+    const displayPrice = product.isVideoPost ? taggedProduct?.price : product.price;
+    return {
+        id: product._id ?? product.id ?? "",
+        video: videoUrl,
+        title: product.title ?? "",
+        price: displayPrice ? String(displayPrice) : "",
+        taggedProductId: taggedProduct?.id ?? taggedProduct?._id ?? undefined,
+        category: normalizeCategory(product.category),
+        shopId: shopId || undefined,
+        shopName: shopId
+            ? resolveFeedEntityName(shopEntity as any)
+            : undefined,
+        shopImage: shopId
+            ? resolveFeedEntityImage(shopEntity as any)
+            : undefined,
+        ownerId: !shopId && ownerId ? ownerId : undefined,
+        ownerName: !shopId && ownerId
+            ? resolveFeedEntityName(ownerEntity as any)
+            : undefined,
+        ownerImage: !shopId
+            ? resolveFeedEntityImage(ownerEntity as any)
+            : undefined,
+        likesCount: product.likesCount ?? 0,
+        sharesCount: product.sharesCount ?? 0,
+        isLiked: !!product.isLiked,
+        isVideoPost: !!product.isVideoPost,
+    };
+}
+
+type ProductFeedsProps = {
+    // Set when arriving via "My Videos" -> tap a video, so the feed opens
+    // pinned to that one post instead of the normal top of the feed.
+    focusPostId?: string;
+    // Called once the pinned post has actually been fetched and shown, so
+    // the parent can forget it — otherwise switching away from this tab and
+    // back would remount this component and jump back to the same post again.
+    onFocusConsumed?: () => void;
+};
+
+function ProductFeeds({ focusPostId, onFocusConsumed }: ProductFeedsProps) {
     const { placeholders } = useDictionary();
     const userId = getUserId() ?? "";
     const LIMIT = 10;
@@ -77,48 +127,29 @@ function ProductFeeds() {
     const { data: productsFeed, isLoading, isFetching } = useGetAllProductsFeedQuery({ page, limit: LIMIT, userId });
     const isInitialLoading = products.length === 0 && (isLoading || isFetching);
 
+    const [focusItem, setFocusItem] = useState<ReelItem | null>(null);
+    const { data: focusProductResponse } = useGetProductDetailQuery(
+        { id: focusPostId ?? "", userId },
+        { skip: !focusPostId },
+    );
+
+    useEffect(() => {
+        if (!focusPostId) {
+            setFocusItem(null);
+            return;
+        }
+        const raw = focusProductResponse?.data as ProductFeedItem | undefined;
+        if (!raw) return;
+        setFocusItem(mapProductFeedItem(raw));
+        onFocusConsumed?.();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [focusPostId, focusProductResponse]);
+
     useEffect(() => {
         const response = (productsFeed as FeedResponse | undefined) ?? undefined;
         const mapped: ReelItem[] =
             response?.data
-                ?.map((product: ProductFeedItem) => {
-                    const videoUrl = pickVideoUrl(product);
-                    const shopId = resolveFeedEntityId(product.shopId);
-                    const ownerId = resolveFeedEntityId(product.ownerId);
-                    const shopEntity = shopId ? product.shopId : null;
-                    const ownerEntity = !shopId && ownerId ? product.ownerId : null;
-                    // A video post's own `price` is a nominal 0, never a real
-                    // price to show — the tagged product's price (if any) is
-                    // the only price that ever means anything here.
-                    const taggedProduct = product.isVideoPost ? product.taggedProductId : null;
-                    const displayPrice = product.isVideoPost ? taggedProduct?.price : product.price;
-                    return {
-                        id: product._id ?? product.id ?? "",
-                        video: videoUrl,
-                        title: product.title ?? "",
-                        price: displayPrice ? String(displayPrice) : "",
-                        taggedProductId: taggedProduct?.id ?? taggedProduct?._id ?? undefined,
-                        category: normalizeCategory(product.category),
-                        shopId: shopId || undefined,
-                        shopName: shopId
-                            ? resolveFeedEntityName(shopEntity as any)
-                            : undefined,
-                        shopImage: shopId
-                            ? resolveFeedEntityImage(shopEntity as any)
-                            : undefined,
-                        ownerId: !shopId && ownerId ? ownerId : undefined,
-                        ownerName: !shopId && ownerId
-                            ? resolveFeedEntityName(ownerEntity as any)
-                            : undefined,
-                        ownerImage: !shopId
-                            ? resolveFeedEntityImage(ownerEntity as any)
-                            : undefined,
-                        likesCount: product.likesCount ?? 0,
-                        sharesCount: product.sharesCount ?? 0,
-                        isLiked: !!product.isLiked,
-                        isVideoPost: !!product.isVideoPost,
-                    };
-                })
+                ?.map(mapProductFeedItem)
                 .filter((item) => !!item.video) ?? [];
 
         setProducts((prev) => {
@@ -135,6 +166,13 @@ function ProductFeeds() {
         if (isFetching || !hasMore) return;
         setPage((prev) => prev + 1);
     };
+
+    // The pinned deep-linked post always leads, regardless of whether/when it
+    // also shows up in the normal paginated list (dedupe by id either way).
+    const reels = focusItem
+        ? [focusItem, ...products.filter((item) => item.id !== focusItem.id)]
+        : products;
+
     return (
         <div className="flex h-full min-h-0 w-full justify-center">
             <div className="h-full min-h-0 w-full max-w-full lg:max-w-[456px]">
@@ -142,7 +180,7 @@ function ProductFeeds() {
                     Array.from({ length: 2 }).map((_, index) => (
                         <div key={index} className="h-[620px] w-full animate-pulse rounded-[8px] bg-gray-200" />
                     ))
-                ) : products.length === 0 ? (
+                ) : reels.length === 0 ? (
                     <div className="flex h-full min-h-[60vh] flex-col items-center justify-center px-6 text-center">
                         <Image src={noFeedIcon} alt="no-feed" />
                         <h3 className="mt-3 text-[22px] font-medium text-black-1">
@@ -156,7 +194,7 @@ function ProductFeeds() {
                 ) : (
                     <ReelsFeed
                         type="products"
-                        reels={products}
+                        reels={reels}
                         onEndReached={handleEndReached}
                         isLoadingMore={isFetching && page > 1}
                     />

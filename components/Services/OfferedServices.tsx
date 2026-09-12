@@ -594,7 +594,7 @@ function OfferedServices() {
                     <button
                         type="button"
                         onClick={() => setPostVideoModal(true)}
-                        className="flex h-[42px] w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-green-1 bg-white text-[14px] font-medium text-green-1"
+                        className="inline-flex h-[36px] w-fit cursor-pointer items-center justify-center gap-1.5 self-start rounded-full border border-green-1 bg-white px-4 text-[13px] font-medium text-green-1"
                     >
                         <Plus className="h-4 w-4" />
                         {placeholders.post_video}

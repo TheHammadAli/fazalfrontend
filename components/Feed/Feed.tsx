@@ -1,17 +1,46 @@
 "use client";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
 import ServiceFeeds from "./ServiceFeeds";
 import ProductFeeds from "./ProductFeeds";
 
-function Feed() {
+type FeedProps = {
+    // Set when arriving via "My Videos" -> tap a video (see /feed page.tsx,
+    // which reads these off the URL's ?postId=&tab= query).
+    initialPostId?: string;
+    initialTab?: string;
+};
+
+function Feed({ initialPostId, initialTab }: FeedProps) {
     const tabs = ["products", "services"] as const;
-    const [activeTab, setActiveTab] = useState<string>(tabs[0]);
+    const [activeTab, setActiveTab] = useState<string>(
+        initialTab === "services" ? "services" : tabs[0],
+    );
     const { placeholders } = useDictionary();
     type PlaceholderKey = keyof typeof placeholders;
+    // Held in a ref (not state) so consuming it doesn't itself trigger a
+    // render; cleared once the target tab's component reports it actually
+    // fetched and pinned the post, so switching tabs away and back afterwards
+    // doesn't jump back to the same post again.
+    const focusPostIdRef = useRef(initialPostId);
+    const [, forceRerender] = useState(0);
+    const consumeFocusPostId = () => {
+        focusPostIdRef.current = undefined;
+        forceRerender((n) => n + 1);
+    };
     const tabsComponents: { [key: string]: React.ReactNode } = {
-        products: <ProductFeeds />,
-        services: <ServiceFeeds />,
+        products: (
+            <ProductFeeds
+                focusPostId={activeTab === "products" ? focusPostIdRef.current : undefined}
+                onFocusConsumed={consumeFocusPostId}
+            />
+        ),
+        services: (
+            <ServiceFeeds
+                focusPostId={activeTab === "services" ? focusPostIdRef.current : undefined}
+                onFocusConsumed={consumeFocusPostId}
+            />
+        ),
     };
 
     return (

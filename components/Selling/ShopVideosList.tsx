@@ -1,7 +1,7 @@
 "use client";
 import React, { useRef, useState } from "react";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   useGetShopDetailQuery,
   useGetShopVideoPostsQuery,
@@ -24,48 +24,35 @@ function resolveEntityId(value: unknown): string | null {
   return null;
 }
 
-// Same click-to-toggle play/pause pattern as the Reels feed (components/Feed/ReelItem.tsx)
-// instead of the native browser control bar, so a small grid thumbnail behaves consistently
-// with the rest of the app's video UI.
-function VideoCard({ src }: { src: string }) {
+// A shop video post is stored as a Product under the hood, so its id is a
+// real Feed "products" tab post id — tapping the card opens it there (same
+// swipeable reel view every other feed video plays in) instead of a small
+// muted loop in this grid.
+function VideoCard({ src, onOpen }: { src: string; onOpen: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-
-  const togglePlayPause = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (video.paused) {
-      video.play();
-      setIsPlaying(true);
-    } else {
-      video.pause();
-      setIsPlaying(false);
-    }
-  };
 
   return (
-    <div className="relative h-[180px] sm:h-[230px] rounded-[16px] overflow-hidden bg-black">
-      <video
-        ref={videoRef}
-        src={src}
-        playsInline
-        className="h-full w-full object-cover cursor-pointer"
-        onClick={togglePlayPause}
-        onPause={() => setIsPlaying(false)}
-        onEnded={() => setIsPlaying(false)}
-      />
-      {!isPlaying && (
-        <button
-          type="button"
-          onClick={togglePlayPause}
-          className="absolute left-1/2 top-1/2 z-10 flex h-[42px] w-[42px] -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-[rgba(0,0,0,0.33)] text-white"
-          aria-label="Play"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-5">
-            <path fillRule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z" clipRule="evenodd" />
-          </svg>
-        </button>
-      )}
+    <div
+      className="relative h-[180px] sm:h-[230px] cursor-pointer overflow-hidden rounded-[16px] bg-black"
+      onClick={onOpen}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+    >
+      <video ref={videoRef} src={src} playsInline muted className="h-full w-full object-cover" />
+      <div
+        className="absolute left-1/2 top-1/2 z-10 flex h-[42px] w-[42px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[rgba(0,0,0,0.33)] text-white"
+        aria-hidden
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-5">
+          <path fillRule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z" clipRule="evenodd" />
+        </svg>
+      </div>
     </div>
   );
 }
@@ -75,6 +62,10 @@ function ShopVideosList() {
   const id = useSearchParams().get("id") || "";
   const userId = getUserId() ?? "";
   const deleteModalRef = React.useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const openInFeed = (postId: string) => {
+    router.push(`/feed?postId=${postId}&tab=products`);
+  };
 
   const { data: shop } = useGetShopDetailQuery(id, { skip: !id });
   const shopOwnerId = resolveEntityId(shop?.data?.ownerId);
@@ -153,7 +144,7 @@ function ShopVideosList() {
             const productId = product?.id ?? product?._id;
             return (
               <div key={productId}>
-                <VideoCard src={product.video} />
+                <VideoCard src={product.video} onOpen={() => openInFeed(productId)} />
                 <div className="flex items-center justify-between gap-2 mt-2">
                   <h2 className="text-black-1 font-medium text-[15px] line-clamp-1">
                     {product?.title}
