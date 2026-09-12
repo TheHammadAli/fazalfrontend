@@ -157,9 +157,13 @@ function ListProduct() {
     if (!isShopListing || !shopCategoryId) return null;
     // Resolved against the full list rather than taken from the shop, because
     // the shop carries only {id, name} and the parameters below need the whole
-    // record. Coming up empty leaves the normal picker in place: the shop is
-    // then filed under something that isn't a product category, which is
-    // exactly the case the server also declines to enforce.
+    // record. A shop is now filed under a shop-type category (grouping
+    // several product categories, e.g. "Vehicle" -> Car, Bike), which is never
+    // in this product-only list — so this always comes up empty and leaves
+    // the normal, unlocked picker in place. The server still enforces the
+    // listing's category is one of the shop's group
+    // (assertCategoryAllowedForShop); a picker constrained to just that group
+    // instead of every product category is a possible future improvement.
     const list = (productCategories?.data ?? []) as categroyTypes[];
     return (
       list.find(

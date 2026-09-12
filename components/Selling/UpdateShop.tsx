@@ -154,10 +154,10 @@ function UpdateShop() {
   const loadedShopIdRef = useRef<string | null>(null);
   const skipNextCategoryResetRef = useRef(false);
 
-  // Product categories, deliberately — see the note in CreateShop: a shop
-  // lists only inside its own category, and that comparison only holds while
-  // the shop and its listings are classified from the same list.
-  const { data: categoriesData } = useCategoriesQuery({ type: "product" });
+  // Shop-type categories — see the note in CreateShop: each groups several
+  // product categories, and a shop filed under one can list products in any
+  // of them.
+  const { data: categoriesData } = useCategoriesQuery({ type: "shop" });
 
   const {
     data: locationsData,

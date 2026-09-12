@@ -113,12 +113,11 @@ function CreateShop() {
     useState<ShopSubcategory | null>(null);
   const [subcategoryError, setSubcategoryError] = useState("");
 
-  // Product categories, deliberately — a shop lists only inside the category
-  // it is opened under, and that comparison only holds while the two come from
-  // the same list. Switching this to the shop-type categories would leave the
-  // shop's category with no product category to match, and the listing form
-  // would quietly stop constraining anything.
-  const { data: categoriesData } = useCategoriesQuery({ type: "product" });
+  // Shop-type categories, each grouping several product categories (e.g.
+  // "Vehicle" groups "Car" and "Bike") — a shop filed under one can then
+  // list products in any category the group contains, enforced server-side
+  // in assertCategoryAllowedForShop.
+  const { data: categoriesData } = useCategoriesQuery({ type: "shop" });
 
   const {
     data: locationsData,

@@ -122,9 +122,12 @@ function UpdateProduct() {
 
   const lockedShopCategory = useMemo(() => {
     if (!shopCategoryId) return null;
-    // Nothing to lock to when the shop is filed under something that isn't a
-    // product category — the server stands aside there too, so the picker
-    // stays available rather than leaving the listing uneditable.
+    // A shop is now filed under a shop-type category (grouping several
+    // product categories, e.g. "Vehicle" -> Car, Bike), never itself a
+    // product category, so this always misses and the picker stays
+    // available rather than leaving the listing uneditable. The server
+    // still enforces the chosen category is one of the shop's group
+    // (assertCategoryAllowedForShop).
     const list = (categoriesData?.data ?? []) as categroyTypes[];
     return (
       list.find(
