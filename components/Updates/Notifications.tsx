@@ -4,6 +4,17 @@ import Image from "next/image";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
 import demoThumb from "@/assets/images/product-image.jpg";
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import {
+    ChatBubbleLeftRightIcon,
+    SignalIcon,
+    HeartIcon,
+    MegaphoneIcon,
+    ArchiveBoxIcon,
+    TagIcon,
+    BriefcaseIcon,
+    FlagIcon,
+    BellIcon,
+} from "@heroicons/react/24/solid";
 import { useGetAllNotificationsQuery, useMarkAsReadMutation } from "@/store/services/notificationService";
 import { getUserId } from "@/utils/getUserId";
 import moment from "moment";
@@ -12,7 +23,6 @@ import { useEffect, useLayoutEffect, useRef, useState, type Dispatch, type SetSt
 import noNotificationIcon from "@/assets/icons/no-notification.svg";
 import { useRouter } from "next/navigation";
 import { formatRequestedDateTime } from "@/utils/formatRequestedDateTime";
-import NotificationIcon from "@/assets/icons/new-notification-icon.png";
 import AnnouncementModal from "./AnnouncementModal";
 /** Must match what the notifications API expects (see `data.limit` in the response). */
 const PAGE_LIMIT = 15;
@@ -115,6 +125,30 @@ function mergeNotificationPages(
 function getPayloadTargetId(payload: NotificationPayload | null): string | undefined {
     if (!payload) return undefined;
     return payload.serviceId ?? payload.productId ?? payload.id ?? payload._id ?? payload?.request?.service;
+}
+
+// One look per notification type — a colored icon badge so the list reads
+// at a glance instead of every row carrying the same generic bell PNG.
+const NOTIFICATION_VISUALS: Record<string, { Icon: typeof BellIcon; bg: string; text: string }> = {
+    MESSAGE: { Icon: ChatBubbleLeftRightIcon, bg: "bg-teal-50", text: "text-[#007781]" },
+    BROADCAST: { Icon: SignalIcon, bg: "bg-blue-50", text: "text-blue-500" },
+    PROMOTION: { Icon: SignalIcon, bg: "bg-blue-50", text: "text-blue-500" },
+    LIKE: { Icon: HeartIcon, bg: "bg-pink-50", text: "text-pink-500" },
+    ANNOUNCEMENT: { Icon: MegaphoneIcon, bg: "bg-orange-50", text: "text-orange-500" },
+    ORDER: { Icon: ArchiveBoxIcon, bg: "bg-green-50", text: "text-green-600" },
+    PRODUCT_OFFER: { Icon: TagIcon, bg: "bg-amber-50", text: "text-amber-600" },
+    SERVICE_REQUEST: { Icon: BriefcaseIcon, bg: "bg-violet-50", text: "text-violet-600" },
+    REPORT: { Icon: FlagIcon, bg: "bg-rose-50", text: "text-rose-600" },
+};
+
+function getNotificationVisual(type?: string) {
+    return (
+        NOTIFICATION_VISUALS[(type ?? "").toUpperCase()] ?? {
+            Icon: BellIcon,
+            bg: "bg-gray-100",
+            text: "text-gray-500",
+        }
+    );
 }
 
 function Notifications({ setOpenSidebar, unreadCount = 0, setReadCount }: NotificationsProps) {
@@ -358,6 +392,7 @@ function Notifications({ setOpenSidebar, unreadCount = 0, setReadCount }: Notifi
                     >
                         {notificationItems.map((item, index) => {
                             const itemId = getNotificationId(item);
+                            const { Icon, bg, text } = getNotificationVisual(item.type);
                             return (
                                 <li
                                     key={itemId ? `${itemId}-${index}` : `notification-${index}`}
@@ -366,15 +401,10 @@ function Notifications({ setOpenSidebar, unreadCount = 0, setReadCount }: Notifi
                                     }}
                                     className="flex px-5 items-center gap-3 py-2 first:pt-2 hover:bg-green-4 cursor-pointer"
                                 >
-                                    <div className="relative h-[42px] w-[42px] shrink-0 overflow-hidden rounded-[10px] bg-gray-5 p-1">
-                                        <Image
-                                            src={NotificationIcon}
-                                            alt=""
-                                            width={42}
-                                            height={42}
-                                            className="h-full w-full object-cover"
-                                            unoptimized={typeof item.image === "string"}
-                                        />
+                                    <div
+                                        className={`flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[10px] ${bg}`}
+                                    >
+                                        <Icon className={`h-5 w-5 ${text}`} />
                                     </div>
 
                                     <div className="min-w-0 flex-1">
