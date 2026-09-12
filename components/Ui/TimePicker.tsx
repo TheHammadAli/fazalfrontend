@@ -71,7 +71,7 @@ function TimePicker({ value, onChange, placeholder, className }: TimePickerProps
         />
       </div>
       {isOpen ? (
-        <div className="absolute z-20 mt-1 max-h-[220px] w-full overflow-y-auto rounded-md border border-gray-200 bg-white shadow-md">
+        <div className="absolute z-20 mt-1 max-h-[220px] w-full overflow-y-auto hide-scrollbar rounded-md border border-gray-200 bg-white shadow-md">
           {TIME_OPTIONS.map((option) => (
             <button
               key={option.value}
