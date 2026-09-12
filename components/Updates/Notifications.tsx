@@ -390,7 +390,9 @@ function Notifications({ setOpenSidebar, unreadCount = 0, setReadCount }: Notifi
                                             className="mt-1 text-[12px] font-normal text-[#414E51]"
                                             suppressHydrationWarning
                                         >
-                                            {moment(item.createdAt).locale(currentLanguage).fromNow()}
+                                            {moment().diff(moment(item.createdAt), "seconds") < 60
+                                                ? ph("just_now")
+                                                : moment(item.createdAt).locale(currentLanguage).fromNow()}
                                         </p>
                                     </div>
 
