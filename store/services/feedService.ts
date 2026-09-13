@@ -19,7 +19,10 @@ export const feedService = baseApi.injectEndpoints({
       // Shares the "PRODUCT" tag with the product list/detail queries, so any
       // create/update/delete (which already invalidates "PRODUCT") refetches
       // the feed automatically instead of needing a manual page refresh.
-      providesTags: ["PRODUCT"],
+      // "FEED" is its own, narrower tag (see likeVideo/unlikeVideo below) so a
+      // like/unlike refreshes just this and the sibling feed queries, not
+      // every "PRODUCT" consumer (the product detail page included).
+      providesTags: ["PRODUCT", "FEED"],
     }),
     getAllServicesFeed: build.query({
       query: ({ page, limit, userId }: { page: number; limit: number; userId?: string }) => {
@@ -30,7 +33,7 @@ export const feedService = baseApi.injectEndpoints({
       },
       // Same as above: services mutations invalidate "SERVICES", so wiring the
       // feed to provide it makes the feed refresh on its own.
-      providesTags: ["SERVICES"],
+      providesTags: ["SERVICES", "FEED"],
     }),
     likeVideo: build.mutation({
       query: (body: any) => {
@@ -40,10 +43,16 @@ export const feedService = baseApi.injectEndpoints({
           body,
         };
       },
-      // Not "PRODUCT" — every screen that shows like state already applies its
-      // own optimistic update, so invalidating it just forced a visible
-      // refetch/reload of the whole product detail page for no reason.
-      invalidatesTags: ["FAVOURITES"],
+      // Not "PRODUCT"/"SERVICES" — every screen that shows like state already
+      // applies its own optimistic update, so invalidating those just forced a
+      // visible refetch/reload of the whole product/service detail page for no
+      // reason. "FEED" is the narrow tag that actually needs refreshing: the
+      // feed's own isLiked/likesCount (and likedVideoByUser below) come from
+      // whatever was cached BEFORE this like/unlike, and neither was being
+      // invalidated by anything — so navigating off the Feed screen and back
+      // (a fresh mount, same cached query args) kept showing the pre-like
+      // state instead of what was just saved.
+      invalidatesTags: ["FAVOURITES", "FEED"],
     }),
     unlikeVideo: build.mutation({
       query: (body: any) => {
@@ -53,7 +62,7 @@ export const feedService = baseApi.injectEndpoints({
           body,
         };
       },
-      invalidatesTags: ["FAVOURITES"],
+      invalidatesTags: ["FAVOURITES", "FEED"],
     }),
     likedVideoByUser: build.query({
       query: ({ userId, type }: any) => {
@@ -62,6 +71,11 @@ export const feedService = baseApi.injectEndpoints({
           method: "GET",
         };
       },
+      // Without this, liking/unliking never invalidated this query's cache —
+      // ReelItem's own isLiked (re-derived from this response for whichever
+      // reel is currently active) kept overriding the correct value with
+      // whatever this returned before the like happened.
+      providesTags: ["FEED"],
     }),
     getUserFavourites: build.query({
       query: (userId: string) => ({
