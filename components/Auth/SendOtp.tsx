@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation";
 import { BASE_URL } from "@/assets/content/constants";
 import Footer from "./Footer";
 import DoodleButton from "@/components/Ui/DoodleButton";
+import AuthField from "./AuthField";
 
 export type Body = {
   email?: string;
@@ -138,45 +139,35 @@ function Signup() {
 
           {/* email */}
           {withEmail && (
-            <div className="space-y-2 mt-5 w-full ">
-              <p
-                className={`text-[14px] font-normal  ${emailError ? "text-red-1" : "text-gray-8"
-                  }`}
-              >
-                Email
-              </p>
-              <input
-                type="email"
-                value={email}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setEmail(e.target.value)
-                }
-                className={`h-[28px]  text-[14px] text-gray-8  font-normal focus:outline-none w-full ${emailError ? "border-red-1" : "border-gray-9"
-                  } border-b-[1px] `}
-              />
-              {emailError && (
-                <p className="text-red-1 text-[14px] font-normal">
-                  {emailError}
-                </p>
-              )}
-            </div>
+            <AuthField
+              className="mt-6 w-full"
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              error={emailError}
+            />
           )}
 
           {/* phone */}
           {withPhone && (
             <div className="w-full">
-              <div className="mt-5">
-                <div className="text-[14px] font-normal text-gray-8">
+              <div className="group relative mt-6 w-full">
+                <label
+                  className={`absolute -top-2 left-3 z-10 bg-white px-1.5 text-[12px] ${countryCodeError ? "text-red-1" : "text-gray-8"
+                    }`}
+                >
                   Country code
-                </div>
-                <div ref={optionsRef} className="relative inline-block w-full">
+                </label>
+                <div ref={optionsRef} className="relative w-full">
                   <div
-                    className="pb-1 w-full flex items-center border-b-[1px] border-gray-9 justify-between mt-1 cursor-pointer"
+                    className={`flex w-full cursor-pointer items-center justify-between rounded-[14px] border px-4 py-3.5 ${countryCodeError ? "border-red-1" : "border-gray-9"
+                      }`}
                     onClick={() => {
                       setIsOpen(!isOpen);
                     }}
                   >
-                    <h2 className="text-[15px] font-normal text-gray-8">
+                    <h2 className="text-[14px] font-normal text-black-1">
                       {countryCode && countryName
                         ? `${countryName} (${countryCode})`
                         : "Select country code"}
@@ -226,25 +217,14 @@ function Signup() {
                   {countryCodeError}
                 </p>
               )}
-              <div className="space-y-2 mt-5">
-                <p className="text-[14px] font-normal text-gray-8">
-                  Phone number
-                </p>
-                <input
-                  type="phone"
-                  value={phone}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    setPhone(e.target.value);
-                  }}
-                  className={`h-[28px] text-[14px] text-gray-8  font-normal focus:outline-none w-full ${phoneError ? "border-red-1" : "border-gray-9"
-                    } border-b-[1px] `}
-                />
-                {phoneError && (
-                  <p className="text-red-1 text-[14px] font-normal">
-                    {phoneError}
-                  </p>
-                )}
-              </div>
+              <AuthField
+                className="mt-6"
+                label="Phone number"
+                type="phone"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                error={phoneError}
+              />
             </div>
           )}
 
@@ -261,14 +241,19 @@ function Signup() {
             <div className="w-full h-[1px] bg-gray-2"></div>
           </div>
 
-          <DoodleButton
+          <button
             type="button"
-            onClick={() => router.push(`${BASE_URL}/auth/google`)}
-            className="mt-6 flex h-[52px] w-full cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-blue-1 text-[15px] font-normal text-white"
+            onClick={() => {
+              // Cross-origin redirect to the backend's OAuth flow — a real
+              // navigation (router.push can't leave the app for an external
+              // URL), same as Signin's own Google button.
+              window.location.href = `${BASE_URL}/auth/google`;
+            }}
+            className="mt-6 flex h-[52px] w-full cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-gray-5 text-[16px] font-medium text-black-1"
           >
-            <Image src={GoogleIcon} alt="google_icon" />{" "}
-            <h3>Continue with Google</h3>
-          </DoodleButton>
+            <Image src={GoogleIcon} alt="google_icon" className="h-[22px] w-[22px]" />
+            Continue with Google
+          </button>
 
           {/* <button
             disabled={isLoading}

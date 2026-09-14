@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import Footer from "./Footer";
 import DoodleButton from "@/components/Ui/DoodleButton";
+import AuthField from "./AuthField";
 import { useAppDispatch } from "@/store/store";
 import { setOtpInfo } from "@/store/reducers/authReducer";
 
@@ -84,31 +85,18 @@ function ForgetPassword() {
           <h1 className="text-black-1   font-medium text-[22px] text-center lg:text-start  leading-[30px] ">
             Forgot password
           </h1>
-          <p className="font-normal text-[16px] text-gray-8"></p>
-          Enter your email.
+          <p className="font-normal text-[16px] text-gray-8">
+            Enter your email.
+          </p>
           {/* email */}
-          <div className="space-y-2 mt-5 w-full ">
-            <p
-              className={`text-[14px] font-normal  ${
-                emailError ? "text-red-1" : "text-gray-8"
-              }`}
-            >
-              Email
-            </p>
-            <input
-              type="email"
-              value={email}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setEmail(e.target.value)
-              }
-              className={`h-[28px]  text-[14px] text-gray-8  font-normal focus:outline-none w-full ${
-                emailError ? "border-red-1" : "border-gray-9"
-              } border-b-[1px] `}
-            />
-            {emailError && (
-              <p className="text-red-1 text-[14px] font-normal">{emailError}</p>
-            )}
-          </div>
+          <AuthField
+            className="mt-6 w-full"
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            error={emailError}
+          />
           <DoodleButton
             onClick={handleSendOtp}
             disabled={isLoading}
