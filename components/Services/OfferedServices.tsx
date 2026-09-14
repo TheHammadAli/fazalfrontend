@@ -35,6 +35,7 @@ import type { ServiceDetailType } from "./ServiceDetail";
 import myOffersIcon from "@/assets/icons/my-requests.svg";
 import serviceRequestIcon from "@/assets/icons/total-products-icon.svg";
 import chevronRightIcon from "@/assets/icons/chevron-right-icon.svg";
+import noServiceIcon from "@/assets/icons/no-products-or-shop.svg";
 import { Video, Plus } from "lucide-react";
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
@@ -174,7 +175,7 @@ function isSentinelVisible(sentinel: HTMLDivElement | null): boolean {
 
 function OfferedServices() {
     const router = useRouter();
-    const { placeholders, currentLanguage } = useDictionary();
+    const { placeholders, currentLanguage, info_messages } = useDictionary();
     const modalRef = React.useRef<HTMLDivElement>(null);
     const [date, setDate] = useState<Date>(
         () => new Date(Date.now() + ONE_HOUR_MS),
@@ -594,6 +595,26 @@ function OfferedServices() {
                     sense once the provider has an actual service listed —
                     without one there's nothing to attach a video to and no
                     requests can ever come in. */}
+                {!hasMyService && (
+                    <div className="flex min-h-[300px] w-full flex-1 items-center justify-center px-4 py-10">
+                        <div className="flex max-w-[320px] flex-col items-center text-center">
+                            <Image
+                                src={noServiceIcon}
+                                alt=""
+                                width={140}
+                                height={140}
+                                unoptimized
+                                className="h-auto w-[140px] max-w-full"
+                            />
+                            <h2 className="mt-4 text-[16px] font-medium text-[#030303] sm:text-[18px]">
+                                {info_messages.no_service_listed}
+                            </h2>
+                            <p className="mt-2 text-[14px] font-normal leading-relaxed text-[#4B514F]">
+                                {info_messages.no_service_listed_subtitle}
+                            </p>
+                        </div>
+                    </div>
+                )}
                 {hasMyService && (
                 <>
                 <div className="w-full shrink-0 px-0 pb-4 pt-3 sm:pt-4">

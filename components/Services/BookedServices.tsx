@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { parsePositiveInt } from "../Updates/Notifications";
 import { useInView } from "react-intersection-observer";
 import { formatPrice } from "@/utils/formatPrice";
+import noBookedServicesIcon from "@/assets/icons/no-products-or-shop.svg";
 
 const PAGE_LIMIT = 10;
 
@@ -53,7 +54,7 @@ function mergeBookedServices(
 }
 
 function BookedServices() {
-    const { placeholders } = useDictionary();
+    const { placeholders, info_messages } = useDictionary();
     const router = useRouter();
     const userId = getUserId();
     const lastMergedKeyRef = useRef("");
@@ -157,9 +158,24 @@ function BookedServices() {
                 {isInitialLoading ? (
                     <ServiceRequestSkeleton count={4} />
                 ) : showEmpty ? (
-                    <p className="py-8 text-center text-[15px] font-medium text-gray-8">
-                        {ph("no_data_available")}
-                    </p>
+                    <div className="flex min-h-[300px] w-full items-center justify-center px-4 py-10">
+                        <div className="flex max-w-[320px] flex-col items-center text-center">
+                            <Image
+                                src={noBookedServicesIcon}
+                                alt=""
+                                width={140}
+                                height={140}
+                                unoptimized
+                                className="h-auto w-[140px] max-w-full"
+                            />
+                            <h2 className="mt-4 text-[16px] font-medium text-[#030303] sm:text-[18px]">
+                                {info_messages.no_booked_services}
+                            </h2>
+                            <p className="mt-2 text-[14px] font-normal leading-relaxed text-[#4B514F]">
+                                {info_messages.no_booked_services_subtitle}
+                            </p>
+                        </div>
+                    </div>
                 ) : (
                     <>
                         {bookedItems.map((request, index) => (
