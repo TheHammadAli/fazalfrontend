@@ -597,7 +597,7 @@ function OfferedServices() {
                     requests can ever come in. */}
                 {!hasMyService && (
                     <div className="flex min-h-[300px] w-full flex-1 items-center justify-center px-4 py-10">
-                        <div className="flex max-w-[320px] flex-col items-center text-center">
+                        <div className="flex max-w-[320px] -translate-y-10 flex-col items-center text-center">
                             <Image
                                 src={noServiceIcon}
                                 alt=""
