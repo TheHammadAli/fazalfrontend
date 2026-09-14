@@ -18,6 +18,7 @@ import { BASE_URL } from "@/assets/content/constants";
 import GoogleIcon from "@/assets/icons/google-icon.svg";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import DoodleButton from "@/components/Ui/DoodleButton";
+import AuthField from "./AuthField";
 import Footer from "./Footer";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
 import { requestBrowserNotificationPermission } from "@/utils/showDesktopNotification";
@@ -167,43 +168,26 @@ function Signin() {
           </p>
 
           {/* Email */}
-          <div className="space-y-2 mt-5">
-            <p
-              className={`text-[14px] ${emailError ? "text-red-1" : "text-gray-8"
-                }`}
-            >
-              Email
-            </p>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={`h-[28px] w-full border-b ${emailError ? "border-red-1" : "border-gray-9"
-                } focus:outline-none`}
-            />
-            {emailError && (
-              <p className="text-red-1 text-[14px]">{emailError}</p>
-            )}
-          </div>
+          <AuthField
+            className="mt-6"
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            error={emailError}
+            placeholder="you@example.com"
+          />
 
           {/* Password */}
-          <div className="space-y-2 mt-5">
-            <p
-              className={`text-[14px] ${passwordError ? "text-red-1" : "text-gray-8"
-                }`}
-            >
-              Password
-            </p>
-            <div
-              className={`flex items-center border-b ${passwordError ? "border-red-1" : "border-gray-9"
-                }`}
-            >
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-[28px] w-full focus:outline-none"
-              />
+          <AuthField
+            className="mt-6"
+            label="Password"
+            type={showPassword ? "text" : "password"}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            error={passwordError}
+            placeholder="••••••••"
+            rightElement={
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
@@ -216,11 +200,8 @@ function Signin() {
                   <EyeIcon className="h-5 w-5" />
                 )}
               </button>
-            </div>
-            {passwordError && (
-              <p className="text-red-1 text-[14px]">{passwordError}</p>
-            )}
-          </div>
+            }
+          />
 
           <div className="flex justify-end pt-4 text-[14px] text-green-1">
             <p
@@ -239,7 +220,7 @@ function Signin() {
             {isLoading ? <BeatLoader color="white" size={8} /> : "Continue"}
           </DoodleButton>
 
-          <DoodleButton
+          <button
             type="button"
             onClick={() => {
               if (!BASE_URL) {
@@ -251,11 +232,11 @@ function Signin() {
               // on this app anyway).
               window.location.href = `${BASE_URL}/auth/google`;
             }}
-            className="mt-6 flex h-[52px] w-full cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-blue-1 text-white"
+            className="mt-6 flex h-[52px] w-full cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-gray-5 text-[16px] font-medium text-black-1"
           >
-            <Image src={GoogleIcon} alt="google_icon" />
+            <Image src={GoogleIcon} alt="google_icon" className="h-[22px] w-[22px]" />
             Continue with Google
-          </DoodleButton>
+          </button>
           <div className="text-center text-[12px] text-gray-8 mt-5">
             Don&apos;t have an account?{" "}
             <span
