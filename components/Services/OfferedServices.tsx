@@ -590,12 +590,12 @@ function OfferedServices() {
                         <MyOfferedServiceCard serviceData={myService} />
                     </div>
                 )}
-                {/* Not gated on hasMyService — a provider can post any number
-                    of these even without a real service. Below the service
-                    card (Edit/Share service) rather than above it, since
-                    creating a video and browsing the ones you've already
-                    posted (the "My Videos" tab below) are two different
-                    actions in two different places. */}
+                {/* Post Video, and the request/videos tabs below, only make
+                    sense once the provider has an actual service listed —
+                    without one there's nothing to attach a video to and no
+                    requests can ever come in. */}
+                {hasMyService && (
+                <>
                 <div className="w-full shrink-0 px-0 pb-4 pt-3 sm:pt-4">
                     <button
                         type="button"
@@ -884,6 +884,8 @@ function OfferedServices() {
                     </div>
                 </div>
                 </div>
+                </>
+                )}
             </div>
             )}
         </>
