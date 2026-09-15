@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
 import chevronIcon from "@/assets/icons/chevron.svg";
 import backIcon from "@/assets/icons/back-arrow.svg";
@@ -643,9 +643,19 @@ function SentOffersPanel() {
 function MyOffers() {
   const { placeholders } = useDictionary();
   const ph = (key: string) => String((placeholders as any)[key] ?? key);
+  const searchParams = useSearchParams();
 
-  const [topTab, setTopTab] = useState<TopTab>("received");
-  const [receivedType, setReceivedType] = useState<ReceivedType>("broadcast");
+  // Notification deep-links can pass offerType=product|broadcast and
+  // topTab=received|sent so the correct sub-tab is pre-selected on mount.
+  const urlOfferType = searchParams.get("offerType");
+  const urlTopTab = searchParams.get("topTab");
+
+  const [topTab, setTopTab] = useState<TopTab>(
+    urlTopTab === "sent" ? "sent" : "received",
+  );
+  const [receivedType, setReceivedType] = useState<ReceivedType>(
+    urlOfferType === "product" ? "product" : "broadcast",
+  );
   const [selectedBroadcast, setSelectedBroadcast] = useState<OfferedBroadcastItem | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<OfferedProductItem | null>(null);
 

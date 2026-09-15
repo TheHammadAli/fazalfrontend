@@ -199,6 +199,15 @@ function Notifications({ setOpenSidebar, unreadCount = 0, setReadCount }: Notifi
             return;
         }
         if (item.type === "BROADCAST") {
+            // A broadcast offer notification carries `payload.offer` — the seller
+            // submitted an offer on the buyer's broadcast. Route the buyer to the
+            // Received → Broadcast sub-tab on the offers page so they can
+            // accept/decline. Regular broadcast-thread message notifications carry
+            // no `offer`, so they still open the chat as before.
+            if (item.payload?.offer) {
+                router.push(`/profile?tab=broadcast_offers&offerType=broadcast`);
+                return;
+            }
             const subTab = item.payload?.broadcastSubTab === "sent" ? "sent" : "received";
             router.push(`/chat?tab=broadcast_messages&type=${subTab}&chatId=${item.payload?.thread?.id}`);
             return;
@@ -234,7 +243,10 @@ function Notifications({ setOpenSidebar, unreadCount = 0, setReadCount }: Notifi
                 router.push(`/profile?tab=my_reports`);
                 break;
             case "PRODUCT_OFFER":
-                router.push(`/profile?tab=broadcast_offers`);
+                // Open the Received → Product sub-tab so the seller sees the
+                // pending offer immediately. offerType=product is read by MyOffers
+                // to pre-select the correct sub-tab.
+                router.push(`/profile?tab=broadcast_offers&offerType=product`);
                 break;
 
             default:

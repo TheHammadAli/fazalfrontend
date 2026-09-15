@@ -1118,6 +1118,18 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
               !localOffer ? (
                 showOfferForm ? (
                   <div className="text-left">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-[16px] font-semibold text-[#030303]">
+                        {String(placeholders.create_offer ?? "Create Offer")}
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => setShowOfferForm(false)}
+                        className="cursor-pointer text-lg leading-none text-gray-400 hover:text-gray-600"
+                      >
+                        ✕
+                      </button>
+                    </div>
                     <label className="mb-1 block text-[13px] font-medium text-[#030303]">
                       {String(placeholders.your_offer_price ?? "Your offer price")}
                     </label>
@@ -1139,16 +1151,25 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
                       placeholder={String(placeholders.offer_message_placeholder ?? "Write your offer message...")}
                       className="mb-3 w-full resize-none rounded-[10px] border border-gray-9 bg-[#EEF2F3] px-4 py-2.5 text-sm text-[#030303] outline-none"
                     />
-                    <button
-                      type="button"
-                      disabled={isSubmittingOffer}
-                      onClick={() => handleSubmitOffer()}
-                      className="w-full cursor-pointer rounded-[8px] bg-green-1 py-2.5 text-[14px] font-medium text-white disabled:opacity-50"
-                    >
-                      {isSubmittingOffer
-                        ? "..."
-                        : String(placeholders.submit_offer ?? "Send Offer")}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowOfferForm(false)}
+                        className="flex-1 cursor-pointer rounded-[8px] border border-gray-9 py-2.5 text-[14px] font-medium text-[#030303]"
+                      >
+                        {String(placeholders.cancel ?? "Cancel")}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isSubmittingOffer}
+                        onClick={() => handleSubmitOffer()}
+                        className="flex-1 cursor-pointer rounded-[8px] bg-green-1 py-2.5 text-[14px] font-medium text-white disabled:opacity-50"
+                      >
+                        {isSubmittingOffer
+                          ? "..."
+                          : String(placeholders.submit_offer ?? "Send Offer")}
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <>
