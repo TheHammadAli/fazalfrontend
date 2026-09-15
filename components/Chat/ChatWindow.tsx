@@ -168,6 +168,29 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
     : headerPresence?.lastSeenAt
       ? `${placeholders.last_seen ?? "last seen"} ${formatLastSeen(headerPresence.lastSeenAt, currentLanguage)}`
       : "";
+
+  // Typing indicator: whether the other participant in THIS conversation is
+  // currently typing, fed by the 'userTyping' socket event below. Takes over
+  // the header line in place of online/last-seen while true — mirrors the
+  // native app's ChatDetailScreen.
+  const [otherTyping, setOtherTyping] = useState(false);
+  const [typingDotCount, setTypingDotCount] = useState(1);
+  useEffect(() => {
+    if (!otherTyping) {
+      setTypingDotCount(1);
+      return;
+    }
+    const interval = setInterval(() => {
+      setTypingDotCount((prev) => (prev % 3) + 1);
+    }, 400);
+    return () => clearInterval(interval);
+  }, [otherTyping]);
+  const typingLabel = otherTyping
+    ? `${String(placeholders.typing ?? "typing")}${".".repeat(typingDotCount)}`
+    : "";
+  const displayStatus = typingLabel || headerStatus;
+  const displayStatusIsActive = otherTyping || Boolean(headerPresence?.isOnline);
+
   const [messageText, setMessageText] = useState("");
   const [filteredMessages, setFilteredMessages] = useState<ChatMessage[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -411,9 +434,67 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
     setImageLightboxOpen(true);
   }, []);
 
+  // Emits this browser's own typing state, debounced so a burst of keystrokes
+  // doesn't spam the socket — 'typing' fires once per burst, 'stopTyping'
+  // fires 2s after the user stops. Direct messages only, same scope as the
+  // typing indicator itself.
+  const isTypingRef = useRef(false);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const emitTyping = useCallback(
+    (isTyping: boolean) => {
+      if (threadType !== "direct_messages" || !conversationId || !userId) return;
+      const socket = initializeSocket("chat");
+      socket?.emit(isTyping ? "typing" : "stopTyping", {
+        conversationId,
+        userId,
+      });
+    },
+    [threadType, conversationId, userId],
+  );
+  const handleMessageTextChange = useCallback(
+    (value: string) => {
+      setMessageText(value);
+      if (threadType !== "direct_messages" || !conversationId || !userId) return;
+
+      if (value.trim()) {
+        if (!isTypingRef.current) {
+          isTypingRef.current = true;
+          emitTyping(true);
+        }
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => {
+          isTypingRef.current = false;
+          emitTyping(false);
+        }, 2000);
+      } else if (isTypingRef.current) {
+        isTypingRef.current = false;
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        emitTyping(false);
+      }
+    },
+    [threadType, conversationId, userId, emitTyping],
+  );
+  // Stop announcing typing when the conversation changes or this window
+  // unmounts, so the other side's indicator doesn't stick on mid-debounce.
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (isTypingRef.current) {
+        isTypingRef.current = false;
+        emitTyping(false);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId]);
+
   const handleSendMessage = useCallback(async () => {
     if (messageText.trim() === "" && !selectedFile && !recordedBlob) {
       return;
+    }
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    if (isTypingRef.current) {
+      isTypingRef.current = false;
+      emitTyping(false);
     }
     const voiceFile = recordedBlob
       ? new File(
@@ -571,6 +652,7 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
     refetchBroadcastMessages,
     refetch,
     scrollToBottom,
+    emitTyping,
   ]);
 
   useEffect(() => {
@@ -758,12 +840,21 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
     const broadcastSocket = initializeSocket("broadcast");
     const onReceiveMessage = () => {
       dispatch(baseApi.util.invalidateTags([{ type: "Chat", id: "LIST" }]));
+      // The message itself arriving is proof typing stopped — don't wait on
+      // the other side's own stopTyping emit, which could lag behind it.
+      setOtherTyping(false);
       // The conversation-open effect only marks read once, on open — a message
       // arriving while this window is already open would otherwise sit at
       // delivered forever until it's closed and reopened.
       if (conversationId && userId && threadType === "direct_messages") {
         markMessagesAsRead({ conversationId, userId }).unwrap().catch(() => {});
       }
+    };
+    const onUserTyping = (payload: { conversationId?: string; userId?: string; isTyping?: boolean }) => {
+      if (!payload) return;
+      if (String(payload.conversationId ?? "") !== String(conversationId ?? "")) return;
+      if (String(payload.userId ?? "") !== String(headerUserId ?? "")) return;
+      setOtherTyping(Boolean(payload.isTyping));
     };
     const onReceiveBroadcastMessage = () => {
       dispatch(baseApi.util.invalidateTags(["BROADCAST"]));
@@ -785,14 +876,16 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
     chatSocket?.on("receiveMessage", onReceiveMessage);
     chatSocket?.on("messagesDelivered", onMessagesDelivered);
     chatSocket?.on("messagesRead", onMessagesRead);
+    chatSocket?.on("userTyping", onUserTyping);
     broadcastSocket?.on("receiveBroadcastMessage", onReceiveBroadcastMessage);
     return () => {
       chatSocket?.off("receiveMessage", onReceiveMessage);
       chatSocket?.off("messagesDelivered", onMessagesDelivered);
       chatSocket?.off("messagesRead", onMessagesRead);
+      chatSocket?.off("userTyping", onUserTyping);
       broadcastSocket?.off("receiveBroadcastMessage", onReceiveBroadcastMessage);
     };
-  }, [dispatch]);
+  }, [dispatch, conversationId, userId, threadType, headerUserId, markMessagesAsRead]);
   return (
     <section
       className="flex h-full min-h-0 flex-1 flex-col bg-repeat bg-center"
@@ -816,11 +909,11 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
             />
             <div className="min-w-0">
               <p className="truncate text-[15px] font-semibold text-gray-900 first-letter:uppercase">{headerName}</p>
-              {headerStatus ? (
+              {displayStatus ? (
                 <p
-                  className={`truncate text-xs ${headerPresence?.isOnline ? "text-green-1" : "text-gray-500"}`}
+                  className={`truncate text-xs ${displayStatusIsActive ? "text-green-1" : "text-gray-500"}`}
                 >
-                  {headerStatus}
+                  {displayStatus}
                 </p>
               ) : null}
             </div>
@@ -1217,7 +1310,7 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
             <div className="relative w-full">
               <textarea
                 value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
+                onChange={(e) => handleMessageTextChange(e.target.value)}
                 onKeyDown={(e) => {
                   if (
                     e.key === "Enter" &&
