@@ -199,13 +199,25 @@ function Notifications({ setOpenSidebar, unreadCount = 0, setReadCount }: Notifi
             return;
         }
         if (item.type === "BROADCAST") {
-            // A broadcast offer notification carries `payload.offer` — the seller
-            // submitted an offer on the buyer's broadcast. Route the buyer to the
-            // Received → Broadcast sub-tab on the offers page so they can
-            // accept/decline. Regular broadcast-thread message notifications carry
-            // no `offer`, so they still open the chat as before.
+            // A broadcast offer notification carries `payload.offer`. Three cases
+            // share this same shape, distinguished by `offerAction`:
+            //  - "submitted": the seller offered on the buyer's broadcast — route
+            //    the buyer to Received → Broadcast so they can accept/decline.
+            //  - "accepted": the chat just unlocked — take the offerer straight
+            //    into it, since that's the most exact destination (thread id is
+            //    right there in the payload).
+            //  - "declined": no chat exists, so land on the Sent tab where the
+            //    offerer can see the declined status.
+            // Regular broadcast-thread message notifications carry no `offer` at
+            // all, so they still open the chat as before (falls through below).
             if (item.payload?.offer) {
-                router.push(`/profile?tab=broadcast_offers&offerType=broadcast`);
+                if (item.payload?.offerAction === "accepted" && item.payload?.thread?.id) {
+                    router.push(`/chat?threadType=broadcast&chatId=${item.payload.thread.id}`);
+                } else if (item.payload?.offerAction === "declined") {
+                    router.push(`/profile?tab=broadcast_offers&topTab=sent`);
+                } else {
+                    router.push(`/profile?tab=broadcast_offers&offerType=broadcast`);
+                }
                 return;
             }
             const subTab = item.payload?.broadcastSubTab === "sent" ? "sent" : "received";
@@ -243,10 +255,21 @@ function Notifications({ setOpenSidebar, unreadCount = 0, setReadCount }: Notifi
                 router.push(`/profile?tab=my_reports`);
                 break;
             case "PRODUCT_OFFER":
-                // Open the Received → Product sub-tab so the seller sees the
-                // pending offer immediately. offerType=product is read by MyOffers
-                // to pre-select the correct sub-tab.
-                router.push(`/profile?tab=broadcast_offers&offerType=product`);
+                // "submitted" (or an older notification stored before offerAction
+                // existed) means the seller has a new offer to act on — open
+                // Received → Product. "accepted"/"declined"/"expired" means this
+                // is the buyer being told the outcome of an offer THEY sent —
+                // Received would show nothing for them, so send them to Sent
+                // instead, where their offer's updated status is visible.
+                if (
+                    item.payload?.offerAction === "accepted" ||
+                    item.payload?.offerAction === "declined" ||
+                    item.payload?.offerAction === "expired"
+                ) {
+                    router.push(`/profile?tab=broadcast_offers&topTab=sent`);
+                } else {
+                    router.push(`/profile?tab=broadcast_offers&offerType=product`);
+                }
                 break;
 
             default:
