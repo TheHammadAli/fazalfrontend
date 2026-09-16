@@ -21,6 +21,7 @@ import { useDebounce } from "use-debounce";
 import Footer from "./Footer";
 import DoodleButton from "@/components/Ui/DoodleButton";
 import AuthField from "./AuthField";
+import LocationPickerModal from "@/components/Ui/LocationPickerModal";
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
 import { setProfileCompleted, setToken, setUserId } from "@/store/reducers/authReducer";
 import { baseApi } from "@/store/baseApi";
@@ -51,6 +52,7 @@ function FinishSignup() {
   const locationRef = useRef<HTMLDivElement | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isLocationOpen, setIsLocationOpen] = useState(false);
+  const [isMapPickerOpen, setIsMapPickerOpen] = useState(false);
   const allCountries = countries.getAll();
   const [countryCode, setCountryCode] = useState("");
   // ISO 3166-1 alpha-2 (e.g. "PK") — used to render an actual flag image.
@@ -495,16 +497,20 @@ function FinishSignup() {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2 mt-1 w-full">
+          <button
+            type="button"
+            onClick={() => setIsMapPickerOpen(true)}
+            className="mt-1 flex w-full cursor-pointer items-center gap-2"
+          >
             <Image
               src={locationIcon}
               className="h-[13px] w-[11px]"
-              alt="Country Flag"
+              alt=""
             />
-            <p className="text-[#030303] font-medium text-[14px] underline cursor-pointer">
+            <p className="text-[#030303] font-medium text-[14px] underline">
               Choose location on map
             </p>
-          </div>
+          </button>
           <div className="w-full font-light text-[14px] text-gray-11 mt-5 lg:max-w-[306px]">
             By selecting Agree and continue, I agree to market’s{" "}
             <span className="hover:underline text-green-1 font-medium ">
@@ -527,6 +533,32 @@ function FinishSignup() {
         <div className="mt-14 w-full">
           <Footer />
         </div>
+
+        <LocationPickerModal
+          open={isMapPickerOpen}
+          onClose={() => setIsMapPickerOpen(false)}
+          initial={
+            location?.coordinates?.lat != null && location?.coordinates?.lng != null
+              ? {
+                  description: location.description ?? "",
+                  coordinates: {
+                    lat: location.coordinates.lat,
+                    lng: location.coordinates.lng,
+                  },
+                }
+              : null
+          }
+          onConfirm={(picked) => {
+            // Same shape the search dropdown already produces (`description`
+            // + `coordinates`), so validation and the submit payload need no
+            // changes to handle a map-picked location.
+            setLocation({
+              description: picked.description,
+              coordinates: picked.coordinates,
+            });
+            setLocationError("");
+          }}
+        />
       </div>
     );
   } else {
