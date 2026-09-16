@@ -53,7 +53,12 @@ function FinishSignup() {
   const [isLocationOpen, setIsLocationOpen] = useState(false);
   const allCountries = countries.getAll();
   const [countryCode, setCountryCode] = useState("");
-  const [countryFlag, setCountryFlag] = useState("");
+  // ISO 3166-1 alpha-2 (e.g. "PK") — used to render an actual flag image.
+  // The flag *emoji* character was tried first, but Windows (even current
+  // Chrome/Edge builds) very commonly fails to render regional-indicator
+  // flag sequences at all, showing nothing — an image renders identically
+  // everywhere.
+  const [countryIsoCode, setCountryIsoCode] = useState("");
   const [location, setLocation] = useState<Location>({});
   const [signup, { isLoading, isSuccess, isError, error, data }] =
     useSignupMutation();
@@ -71,10 +76,10 @@ function FinishSignup() {
   const [firstNameError, setFirstNameError] = useState("");
   const [lastNameError, setLastNameError] = useState("");
   const [mounted, setMounted] = useState(false);
-  const simplified = allCountries.map(({ name, dial_code, flag }) => ({
+  const simplified = allCountries.map(({ name, dial_code, code }) => ({
     name,
     dial_code,
-    flag,
+    code,
   }));
 
   const [debouncedLocationSearch] = useDebounce(locationSearch, 500);
@@ -342,9 +347,17 @@ function FinishSignup() {
                   <button
                     type="button"
                     onClick={() => setIsOpen(!isOpen)}
-                    className="flex items-center gap-1 pr-2 border-r border-gray-9 text-[14px] text-black-1"
+                    className="flex items-center gap-1.5 pr-2 border-r border-gray-9 text-[14px] text-black-1"
                   >
-                    {countryFlag && <span>{countryFlag}</span>}
+                    {countryIsoCode && (
+                      <img
+                        src={`https://flagcdn.com/24x18/${countryIsoCode.toLowerCase()}.png`}
+                        alt=""
+                        width={20}
+                        height={15}
+                        className="rounded-[2px]"
+                      />
+                    )}
                     <span>{countryCode || "+--"}</span>
                   </button>
                   {isOpen && (
@@ -364,7 +377,7 @@ function FinishSignup() {
                             <div
                               onClick={() => {
                                 setCountryCode(data?.dial_code);
-                                setCountryFlag(data?.flag);
+                                setCountryIsoCode(data?.code);
                                 setIsOpen(false);
                               }}
                               className="text-[14px]  text-gray-8 px-4 py-2 text-sm cursor-pointer font-light hover:bg-gray-100"
