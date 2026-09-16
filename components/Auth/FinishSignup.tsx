@@ -52,8 +52,8 @@ function FinishSignup() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLocationOpen, setIsLocationOpen] = useState(false);
   const allCountries = countries.getAll();
-  const [countryName, setCountryName] = useState("");
   const [countryCode, setCountryCode] = useState("");
+  const [countryFlag, setCountryFlag] = useState("");
   const [location, setLocation] = useState<Location>({});
   const [signup, { isLoading, isSuccess, isError, error, data }] =
     useSignupMutation();
@@ -71,9 +71,10 @@ function FinishSignup() {
   const [firstNameError, setFirstNameError] = useState("");
   const [lastNameError, setLastNameError] = useState("");
   const [mounted, setMounted] = useState(false);
-  const simplified = allCountries.map(({ name, dial_code }) => ({
+  const simplified = allCountries.map(({ name, dial_code, flag }) => ({
     name,
     dial_code,
+    flag,
   }));
 
   const [debouncedLocationSearch] = useDebounce(locationSearch, 500);
@@ -149,13 +150,18 @@ function FinishSignup() {
       }
     }
 
+    // `phone` only ever holds the national number now — the dial code lives
+    // in `countryCode` (shown separately via the field's leftElement) — so
+    // both validation and the submitted value need the two joined back
+    // together into one international-format number.
+    const fullPhone = `${countryCode}${phone}`;
     if (type === "email") {
       checkField(countryCode, setCountryCodeError, "Country code is required*");
 
       if (phone.trim() === "") {
         setPhoneError("Phone number is required*");
         isValid = false;
-      } else if (validatePhone(phone) === false) {
+      } else if (validatePhone(fullPhone) === false) {
         setPhoneError("Please enter valid phone number");
         isValid = false;
       } else {
@@ -169,7 +175,7 @@ function FinishSignup() {
         email: finalEmail,
         password: password,
         name: firstName + " " + lastName,
-        phone: type === "phone" ? phoneData : phone,
+        phone: type === "phone" ? phoneData : fullPhone,
         address: location?.description,
         location: {
           type: "Point",
@@ -289,22 +295,25 @@ function FinishSignup() {
               Add photo
             </label>
           </div>
-          {/* first name */}
-          <AuthField
-            className="mt-6"
-            label="First name"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            error={firstNameError}
-          />
-          {/* last name */}
-          <AuthField
-            className="mt-6"
-            label="Last name"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            error={lastNameError}
-          />
+          {/* first + last name, side by side */}
+          <div className="mt-6 flex w-full gap-4">
+            <AuthField
+              className="flex-1"
+              label="First name"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              error={firstNameError}
+              placeholder="Enter your first name"
+            />
+            <AuthField
+              className="flex-1"
+              label="Last name"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              error={lastNameError}
+              placeholder="Enter your last name"
+            />
+          </div>
           {/* email address */}
           {mounted && type === "phone" && (
             <AuthField
@@ -314,41 +323,32 @@ function FinishSignup() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               error={emailError}
+              placeholder="you@example.com"
             />
           )}
-          {/* phone number */}
+          {/* phone number — country code lives inside this field now
+              (leftElement), no separate selector row above it anymore */}
           {mounted && type === "email" && (
-            <div className="w-full">
-              <div className="group relative mt-6 w-full">
-                <label
-                  className={`absolute -top-2 left-3 z-10 bg-white px-1.5 text-[12px] ${countryCodeError ? "text-red-1" : "text-gray-8"
-                    }`}
-                >
-                  Country code
-                </label>
-                <div ref={countryRef} className="relative w-full">
-                  <div
-                    className={`flex w-full cursor-pointer items-center justify-between rounded-[14px] border px-4 py-3.5 ${countryCodeError ? "border-red-1" : "border-gray-9"
-                      }`}
-                    onClick={() => {
-                      setIsOpen(!isOpen);
-                    }}
+            <AuthField
+              className="mt-6"
+              label="Phone number"
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              error={countryCodeError || phoneError}
+              placeholder="3XX XXXXXXX"
+              leftElement={
+                <div ref={countryRef} className="relative shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="flex items-center gap-1 pr-2 border-r border-gray-9 text-[14px] text-black-1"
                   >
-                    <h2 className="text-[14px] font-normal text-black-1">
-                      {countryCode && countryName
-                        ? `${countryName} (${countryCode})`
-                        : "Select country code"}
-                    </h2>
-                    <Image
-                      src={chevDown}
-                      alt="chev-down"
-                      className="h-[16px] w-[12px]"
-                      height={100}
-                      width={100}
-                    />
-                  </div>
+                    {countryFlag && <span>{countryFlag}</span>}
+                    <span>{countryCode || "+--"}</span>
+                  </button>
                   {isOpen && (
-                    <div className="absolute z-20 mt-2 w-full text-gray-8 text-[14px] bg-white">
+                    <div className="absolute z-20 mt-2 w-[280px] text-gray-8 text-[14px] bg-white">
                       <input
                         type="text"
                         placeholder="Search country..."
@@ -363,9 +363,8 @@ function FinishSignup() {
                           filteredCountryCodes?.map((data, index) => (
                             <div
                               onClick={() => {
-                                setCountryName(data?.name);
                                 setCountryCode(data?.dial_code);
-                                setPhone(data?.dial_code);
+                                setCountryFlag(data?.flag);
                                 setIsOpen(false);
                               }}
                               className="text-[14px]  text-gray-8 px-4 py-2 text-sm cursor-pointer font-light hover:bg-gray-100"
@@ -380,23 +379,9 @@ function FinishSignup() {
                       </div>
                     </div>
                   )}
-                  {countryCodeError && (
-                    <p className="text-red-1 text-[14px] font-normal">
-                      {countryCodeError}
-                    </p>
-                  )}
                 </div>
-              </div>
-
-              <AuthField
-                className="mt-6"
-                label="Phone number"
-                type="phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                error={phoneError}
-              />
-            </div>
+              }
+            />
           )}
           {/* location */}
           <div className="group relative mt-6 w-full">

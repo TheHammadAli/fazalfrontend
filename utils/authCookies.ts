@@ -1,9 +1,10 @@
-import { deleteCookie, setCookie } from "cookies-next";
+import { deleteCookie, getCookie, setCookie } from "cookies-next";
 
 const COOKIE_PATH = "/";
 
 export const ACCESS_TOKEN_MAX_AGE = 60 * 60 * 24 * 30;
 export const REFRESH_TOKEN_MAX_AGE = 60 * 60 * 24 * 30;
+const REMEMBER_ME_COOKIE = "rememberMe";
 
 const baseOptions = {
   path: COOKIE_PATH,
@@ -11,29 +12,56 @@ const baseOptions = {
   secure: process.env.NODE_ENV === "production",
 };
 
-export function setAccessTokenCookie(token: string) {
+// `persist=false` (Sign in's "Remember me" left unchecked) omits maxAge
+// entirely, which makes it a session cookie — gone as soon as the browser
+// closes — instead of the usual 30-day one.
+export function setAccessTokenCookie(token: string, persist = true) {
   setCookie("token", token, {
     ...baseOptions,
-    maxAge: ACCESS_TOKEN_MAX_AGE,
+    ...(persist ? { maxAge: ACCESS_TOKEN_MAX_AGE } : {}),
   });
 }
 
-export function setRefreshTokenCookie(token: string) {
+export function setRefreshTokenCookie(token: string, persist = true) {
   setCookie("refreshToken", token, {
     ...baseOptions,
-    maxAge: REFRESH_TOKEN_MAX_AGE,
+    ...(persist ? { maxAge: REFRESH_TOKEN_MAX_AGE } : {}),
   });
 }
 
-export function setAuthTokens(tokens: {
-  accessToken: string;
-  refreshToken?: string;
-}) {
-  setAccessTokenCookie(tokens.accessToken);
+// Remembers the "Remember me" choice itself, with matching persistence, so a
+// later silent token refresh (baseApi's 401 retry) knows whether to keep
+// re-issuing session cookies or persistent ones — without this, a refresh
+// happening later in the same browser session would silently upgrade a
+// "don't remember me" login back to a 30-day persistent one.
+export function setRememberMeCookie(remember: boolean) {
+  setCookie(REMEMBER_ME_COOKIE, remember ? "true" : "false", {
+    ...baseOptions,
+    ...(remember ? { maxAge: ACCESS_TOKEN_MAX_AGE } : {}),
+  });
+}
+
+// Defaults to true (persist) when absent — matches this app's behavior
+// before "Remember me" existed, and covers flows that never set the cookie
+// (Google OAuth callback, signup auto-login).
+export function getRememberMe(): boolean {
+  const value = getCookie(REMEMBER_ME_COOKIE);
+  return value !== "false";
+}
+
+export function setAuthTokens(
+  tokens: {
+    accessToken: string;
+    refreshToken?: string;
+  },
+  persist = true,
+) {
+  setAccessTokenCookie(tokens.accessToken, persist);
   // Always keep refresh cookie in sync when access is updated.
   if (tokens.refreshToken) {
-    setRefreshTokenCookie(tokens.refreshToken);
+    setRefreshTokenCookie(tokens.refreshToken, persist);
   }
+  setRememberMeCookie(persist);
 }
 
 export function setUserIdCookie(userId: string) {
@@ -58,6 +86,7 @@ export function clearAuthCookies() {
   deleteCookie("profileCompleted", opts);
   deleteCookie("isGuest", opts);
   deleteCookie("isAdmin", opts);
+  deleteCookie(REMEMBER_ME_COOKIE, opts);
 }
 
 /** Reads accessToken + refreshToken from refresh/login response.

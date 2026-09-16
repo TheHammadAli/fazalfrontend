@@ -11,6 +11,7 @@ import AuthImagePanel from "./AuthImagePanel";
 import Footer from "./Footer";
 import DoodleButton from "@/components/Ui/DoodleButton";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import AuthField from "./AuthField";
 export type Body = {
   email?: string;
   phoneNumber?: string;
@@ -122,26 +123,15 @@ function SetPassword() {
             </p>
 
             {/* password */}
-            <div className="space-y-2 mt-5 w-full max-w-[500px] lg:max-w-full">
-              <p
-                className={`text-[14px] font-normal
-            ${passwordError ? "text-red-1" : "text-gray-8"}
-              `}
-              >
-                Password
-              </p>
-              <div
-                className={`flex gap-1 items-center ${passwordError ? "border-red-1" : "border-gray-9"
-                  } border-b-[1px]`}
-              >
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setPassword(e.target.value)
-                  }
-                  className={`h-[28px] text-[14px] text-gray-8  font-normal focus:outline-none w-full  `}
-                />
+            <AuthField
+              className="mt-5 w-full max-w-[500px] lg:max-w-full"
+              label="Password"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              error={passwordError}
+              placeholder="••••••••"
+              rightElement={
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -154,11 +144,8 @@ function SetPassword() {
                     <EyeIcon className="h-5 w-5" />
                   )}
                 </button>
-              </div>
-              <p className="text-red-1 text-[14px] font-normal -mt-1">
-                {passwordError}
-              </p>
-            </div>
+              }
+            />
             {password !== "" && (
               <div className="mt-3 space-y-2 w-full  max-w-[500px] lg:max-w-full">
                 <div className="flex items-center gap-[4px] ">
@@ -210,26 +197,15 @@ function SetPassword() {
             )}
 
             {/* confirm password */}
-            <div className="space-y-2 mt-5 w-full  max-w-[500px] lg:max-w-full">
-              <p
-                className={`text-[14px] font-normal
-            ${confirmPasswordError ? "text-red-1" : "text-gray-8"}
-              `}
-              >
-                Confirm password
-              </p>
-              <div
-                className={`flex gap-1 items-center ${confirmPasswordError ? "border-red-1" : "border-gray-9"
-                  } border-b-[1px]`}
-              >
-                <input
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setConfirmPassword(e.target.value)
-                  }
-                  className={`h-[28px] text-[14px] text-gray-8  font-normal focus:outline-none w-full  `}
-                />
+            <AuthField
+              className="mt-5 w-full max-w-[500px] lg:max-w-full"
+              label="Confirm password"
+              type={showConfirmPassword ? "text" : "password"}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              error={confirmPasswordError}
+              placeholder="••••••••"
+              rightElement={
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -242,14 +218,8 @@ function SetPassword() {
                     <EyeIcon className="h-5 w-5" />
                   )}
                 </button>
-              </div>
-
-              {confirmPasswordError && (
-                <p className="text-red-1 text-[14px] font-normal">
-                  {confirmPasswordError}
-                </p>
-              )}
-            </div>
+              }
+            />
 
             <DoodleButton
               type="submit"

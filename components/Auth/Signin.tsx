@@ -63,6 +63,7 @@ function Signin() {
   const [passwordError, setPasswordError] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
   const [signin, { isLoading }] = useSigninMutation();
 
@@ -113,6 +114,7 @@ function Signin() {
         setToken({
           accessToken: res.data.accessToken,
           refreshToken: res.data.refreshToken,
+          rememberMe,
         })
       );
 
@@ -203,9 +205,18 @@ function Signin() {
             }
           />
 
-          <div className="flex justify-end pt-4 text-[14px] text-green-1">
+          <div className="flex items-center justify-between pt-4 text-[14px]">
+            <label className="flex cursor-pointer items-center gap-2 text-gray-8">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-4 w-4 cursor-pointer accent-green-1"
+              />
+              Remember me
+            </label>
             <p
-              className="cursor-pointer hover:underline"
+              className="cursor-pointer text-green-1 hover:underline"
               onClick={() => router.push("/forget-password")}
             >
               Forgot password?

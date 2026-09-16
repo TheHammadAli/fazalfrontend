@@ -8,6 +8,7 @@ type AuthFieldProps = {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
   rightElement?: React.ReactNode;
+  leftElement?: React.ReactNode;
   className?: string;
   inputProps?: Omit<
     React.InputHTMLAttributes<HTMLInputElement>,
@@ -31,6 +32,7 @@ function AuthField({
   onChange,
   placeholder,
   rightElement,
+  leftElement,
   className = "",
   inputProps,
 }: AuthFieldProps) {
@@ -50,6 +52,7 @@ function AuthField({
             : "border-gray-9 group-focus-within:border-green-1"
         }`}
       >
+        {leftElement}
         <input
           type={type}
           value={value}

@@ -114,12 +114,37 @@ function Signup() {
       return () => clearTimeout(timer);
     }
     if (isError && "data" in error) {
-      toast.error(
+      const message =
         (error?.data as { message?: string })?.message ||
-        "something went wrong!"
-      );
+        "something went wrong!";
+      // Backend rejects with 409 specifically when this email already has an
+      // account (see auth.service.ts's sendEmailVerificationLink) — offer a
+      // direct way to Sign In instead of leaving them to retype the same
+      // email on a dead-end form.
+      if ("status" in error && error.status === 409) {
+        toast.error(
+          (t) => (
+            <span>
+              {message}{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  toast.dismiss(t.id);
+                  router.push("/signin");
+                }}
+                className="ml-1 font-medium text-green-1 underline cursor-pointer"
+              >
+                Sign in
+              </button>
+            </span>
+          ),
+          { duration: 5000 }
+        );
+      } else {
+        toast.error(message);
+      }
     }
-  }, [isSuccess, isError, data, error]);
+  }, [isSuccess, isError, data, error, router]);
   return (
     <div className="flex h-screen min-h-[818px] w-full max-w-full overflow-x-hidden pt-[50px] hide-scrollbar lg:flex lg:pt-0">
       {/* Left section */}
@@ -146,6 +171,7 @@ function Signup() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               error={emailError}
+              placeholder="you@example.com"
             />
           )}
 

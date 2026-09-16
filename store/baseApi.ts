@@ -11,6 +11,7 @@ import { getRefreshToken, getToken } from "@/utils/getToken";
 import { refreshAuthTokens } from "@/utils/refreshAuthTokens";
 import { logout, setToken } from "./reducers/authReducer";
 import { getCookie } from "cookies-next";
+import { getRememberMe } from "@/utils/authCookies";
 import { isGuestSession } from "@/utils/isGuestSession";
 import { i18n } from "@/i18n.config";
 
@@ -93,6 +94,10 @@ export const baseQueryWithReauth: BaseQueryFn<
           setToken({
             accessToken: tokens.accessToken,
             refreshToken: tokens.refreshToken,
+            // Re-issuing cookies here must not silently upgrade a
+            // session-only ("Remember me" unchecked) login into a 30-day
+            // persistent one — carry the original choice forward.
+            rememberMe: getRememberMe(),
           }),
         );
         result = await rawBaseQuery(args, api, extraOptions);

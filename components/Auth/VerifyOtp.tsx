@@ -24,6 +24,26 @@ function VerifyOtp() {
   const [otp, setOtp] = useState("");
   const [timer, setTimer] = useState(12);
   const otpInfo = useAppSelector((state) => state.authReducer.otpInfo);
+  const canResend = timer <= 0;
+
+  // Ticks the resend cooldown down to 0. `timer` was previously declared but
+  // never actually counted down anywhere, so "Click to resend" was always
+  // clickable regardless of how recently a code had been sent.
+  useEffect(() => {
+    if (timer <= 0) return;
+    const interval = setInterval(() => {
+      setTimer((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [timer]);
+
+  const formatTimer = (totalSeconds: number) => {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes.toString().padStart(2, "0")}:${seconds
+      .toString()
+      .padStart(2, "0")}`;
+  };
   const emailFromQuery = searchParams.get("email")?.trim() ?? "";
   const flowType = searchParams.get("type")?.trim() ?? "";
   const isRegisterFlow = flowType === "register";
@@ -85,7 +105,7 @@ function VerifyOtp() {
   }, [contactType, emailFromQuery, isRegisterFlow, email]);
 
   const handleSendOtp = () => {
-    if (isResendLoading) return;
+    if (isResendLoading || !canResend) return;
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     let isValid = true;
     let body: Body = {};
@@ -183,18 +203,14 @@ function VerifyOtp() {
         >
           <div className="w-full flex flex-col items-center lg:items-start">
             {" "}
-            <h1 className="text-black-1 text-center lg:text-left font-medium text-[22px] w-full max-w-[334px]  leading-[30px] ">
+            <h1 className="text-black-1 text-center lg:text-left font-bold text-[22px] w-full max-w-[334px]  leading-[30px] ">
               OTP Verification{" "}
             </h1>
-            <p className="font-light text-[16px] text-gray-8 text-center lg:text-left">
-              Enter the verification code we just sent to
+            <p className="text-[14px] text-gray-8 text-center lg:text-left">
+              Enter the verification code we just sent to{" "}
+              <span className="font-medium text-black-1">{email}</span>
             </p>
-            {mounted && (
-              <p className=" text-[16px] font-light text-gray-8 text-center lg:text-left">
-                {email}
-              </p>
-            )}
-            <div className="flex justify-center  gap-2 mt-6 w-full max-w-[500px] lg:max-w-full">
+            <div className="flex justify-center  gap-2 mt-8 w-full max-w-[500px] lg:max-w-full">
               <InputForOtp otp={otp} setOtp={setOtp} />
             </div>
             {emailError ? (
@@ -202,19 +218,23 @@ function VerifyOtp() {
                 {emailError}
               </p>
             ) : null}
-            <div className="mt-5 w-full text-center text-[13px] font-light leading-none text-gray-8 lg:text-start">
-              Didn’t get the code?{" "}
+            <div className="mt-6 flex w-full items-center justify-center gap-1.5 text-[13px] text-gray-8 lg:justify-start">
+              <span>Didn&apos;t get the code?</span>
               {isResendLoading ? (
                 <span className="inline-flex items-center align-middle">
                   <BeatLoader color="#3C9197" size={6} />
                 </span>
-              ) : (
-                <span
+              ) : canResend ? (
+                <button
+                  type="button"
                   onClick={handleSendOtp}
-                  className="cursor-pointer font-normal text-green-1 hover:underline"
+                  className="cursor-pointer font-medium text-green-1 hover:underline"
                 >
-                  {" "}
-                  Click to resend
+                  Resend code
+                </button>
+              ) : (
+                <span className="font-medium tabular-nums text-gray-6">
+                  Resend in {formatTimer(timer)}
                 </span>
               )}
             </div>

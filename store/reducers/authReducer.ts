@@ -79,6 +79,10 @@ const authSlice = createSlice({
       const accessToken = action.payload.accessToken;
       const refreshToken =
         action.payload.refreshToken ?? state.refreshToken ?? "";
+      // Undefined (every caller except Signin) keeps the previous
+      // always-persist behavior — only Signin's unchecked "Remember me"
+      // actually passes false.
+      const rememberMe = action.payload.rememberMe ?? true;
 
       state.token = accessToken;
       if (refreshToken) {
@@ -87,10 +91,13 @@ const authSlice = createSlice({
       state.isGuest = false;
 
       // Update access + refresh cookies together.
-      setAuthTokens({
-        accessToken,
-        refreshToken: refreshToken || undefined,
-      });
+      setAuthTokens(
+        {
+          accessToken,
+          refreshToken: refreshToken || undefined,
+        },
+        rememberMe,
+      );
       deleteCookie("isGuest", { path: "/" });
     },
 
