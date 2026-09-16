@@ -54,13 +54,17 @@ function FinishSignup() {
   const [isLocationOpen, setIsLocationOpen] = useState(false);
   const [isMapPickerOpen, setIsMapPickerOpen] = useState(false);
   const allCountries = countries.getAll();
-  const [countryCode, setCountryCode] = useState("");
+  // Defaults to Pakistan (same default the native app's equivalent field
+  // uses) so the field shows a real code + flag immediately — left empty,
+  // it showed the placeholder "+--" with no flag until the user opened the
+  // picker themselves.
+  const [countryCode, setCountryCode] = useState("+92");
   // ISO 3166-1 alpha-2 (e.g. "PK") — used to render an actual flag image.
   // The flag *emoji* character was tried first, but Windows (even current
   // Chrome/Edge builds) very commonly fails to render regional-indicator
   // flag sequences at all, showing nothing — an image renders identically
   // everywhere.
-  const [countryIsoCode, setCountryIsoCode] = useState("");
+  const [countryIsoCode, setCountryIsoCode] = useState("PK");
   const [location, setLocation] = useState<Location>({});
   const [signup, { isLoading, isSuccess, isError, error, data }] =
     useSignupMutation();
