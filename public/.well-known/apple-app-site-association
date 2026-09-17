@@ -1,0 +1,17 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["BAFVX886YS.com.fazl.app"],
+        "components": [
+          { "/": "/en/buy-product*", "comment": "Product detail" },
+          { "/": "/ur/buy-product*", "comment": "Product detail (Urdu)" },
+          { "/": "/en/book-service*", "comment": "Service detail; also the feed's share target" },
+          { "/": "/ur/book-service*", "comment": "Service detail (Urdu)" },
+          { "/": "/en/selling/shop-detail*", "comment": "Shop detail" },
+          { "/": "/ur/selling/shop-detail*", "comment": "Shop detail (Urdu)" }
+        ]
+      }
+    ]
+  }
+}
