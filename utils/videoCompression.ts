@@ -1,7 +1,7 @@
 import { Muxer, ArrayBufferTarget } from "mp4-muxer";
 
 /**
- * Shrinks a picked video to a 480p H.264/AAC MP4 before it's uploaded.
+ * Shrinks a picked video to a 720p H.264/AAC MP4 before it's uploaded.
  *
  * The file input hands back the camera's original untouched — a 2-3 minute
  * phone clip is 100-200MB — which is what makes video posts slow enough to time
@@ -15,29 +15,34 @@ import { Muxer, ArrayBufferTarget } from "mp4-muxer";
 
 export const MAX_DURATION_SECONDS = 60;
 
-/** Long edge of the output. 16:9 lands on 854x480, 9:16 on 480x854 — whichever
+/** Long edge of the output. 16:9 lands on 1280x720, 9:16 on 720x1280 — whichever
  *  edge is longer gets capped, so orientation survives and nothing stretches. */
-const MAX_DIMENSION = 854;
-
-/** Aim point inside the 500-700KB band we're targeting. */
-const TARGET_BYTES = 650 * 1024;
-
-/** Above this, a second pass at a lower bitrate is worth trying. */
-const MAX_OUTPUT_BYTES = 700 * 1024;
-
-const AUDIO_BITRATE = 64_000;
+const MAX_DIMENSION = 1280;
 
 /**
- * The quality floor. 60s at 700KB works out to ~89kbps, an unwatchable smear at
- * any resolution — so past a certain duration we deliberately overshoot the size
- * target rather than destroy the video.
+ * Size is a budget, not a hard cap. An earlier pass aimed at 500-700KB and the
+ * result was visibly mushy: 480p needs ~1000-1500kbps to hold up, and that
+ * budget forced a third of it. The original problem was 100-200MB uploads
+ * timing out, and 720p at a watchable bitrate is still a 5-10x cut — so the
+ * budget is set where quality survives rather than at the smallest number.
  */
-const MIN_VIDEO_BITRATE = 400_000;
+const TARGET_BYTES = 8 * 1024 * 1024;
 
-/** No point spending more than this on a few seconds of 480p. */
-const MAX_VIDEO_BITRATE = 1_200_000;
+/** Above this, a second pass at a lower bitrate is worth trying. */
+const MAX_OUTPUT_BYTES = 10 * 1024 * 1024;
 
-/** H.264 Main profile, level 3.1 — comfortably covers 854x480. */
+const AUDIO_BITRATE = 96_000;
+
+/**
+ * The quality floor — never encode worse than this regardless of duration.
+ * 2500kbps at 720p is sharp on screen; a 60s clip lands ~19MB.
+ */
+const MIN_VIDEO_BITRATE = 2_500_000;
+
+/** Ceiling for very short clips, so a 5s video doesn't balloon needlessly. */
+const MAX_VIDEO_BITRATE = 4_000_000;
+
+/** H.264 Main profile, level 3.1 — 3600 macroblocks, i.e. exactly 1280x720@30. */
 const H264_CODEC = "avc1.4D401F";
 const AAC_CODEC = "mp4a.40.2";
 
@@ -65,7 +70,7 @@ export const computeVideoBitrate = (durationSeconds: number): number => {
 };
 
 /** H.264 needs even dimensions; the long edge is capped and never upscaled. */
-const fitWithin480p = (width: number, height: number) => {
+const fitWithin720p = (width: number, height: number) => {
   const longEdge = Math.max(width, height);
   const scale = longEdge > MAX_DIMENSION ? MAX_DIMENSION / longEdge : 1;
   const even = (value: number) => Math.max(2, Math.round(value * scale / 2) * 2);
@@ -209,7 +214,7 @@ const encodeAtBitrate = async (
   audio: AudioBuffer | null,
   onProgress?: (fraction: number) => void,
 ): Promise<File> => {
-  const { width, height } = fitWithin480p(info.width, info.height);
+  const { width, height } = fitWithin720p(info.width, info.height);
 
   const muxer = new Muxer({
     target: new ArrayBufferTarget(),
@@ -338,7 +343,7 @@ export const prepareVideoForUpload = async (
   }
 
   const longEdge = Math.max(info.width, info.height);
-  // Already small and already within 480p — re-encoding could only make it look
+  // Already small and already within 720p — re-encoding could only make it look
   // worse for no size win.
   if (file.size <= MAX_OUTPUT_BYTES && longEdge > 0 && longEdge <= MAX_DIMENSION) {
     return { file, compressed: false };
@@ -346,7 +351,7 @@ export const prepareVideoForUpload = async (
 
   if (!hasCompressionApis()) return { file, compressed: false };
 
-  const { width, height } = fitWithin480p(info.width, info.height);
+  const { width, height } = fitWithin720p(info.width, info.height);
   if (!(await canEncodeH264(width, height))) return { file, compressed: false };
 
   const decoded = await decodeAudio(file);
