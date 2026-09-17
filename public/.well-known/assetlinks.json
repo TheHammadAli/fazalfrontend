@@ -8,15 +8,5 @@
         "5A:AB:1D:3C:88:64:35:B6:C7:92:DA:76:6A:DC:33:8C:53:23:B8:79:D3:3B:57:EE:01:DC:0A:DE:2B:68:40:28"
       ]
     }
-  },
-  {
-    "relation": ["delegate_permission/common.handle_all_urls"],
-    "target": {
-      "namespace": "android_app",
-      "package_name": "fazlapp.com",
-      "sha256_cert_fingerprints": [
-        "5A:AB:1D:3C:88:64:35:B6:C7:92:DA:76:6A:DC:33:8C:53:23:B8:79:D3:3B:57:EE:01:DC:0A:DE:2B:68:40:28"
-      ]
-    }
   }
 ]
