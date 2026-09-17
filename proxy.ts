@@ -135,6 +135,12 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|favicon.png|icon.svg|icon.png|firebase-messaging-sw.js|notifications/).*)",
+    // `.well-known` is excluded because everything under it is fetched by a
+    // machine, not a person: Android reads /.well-known/assetlinks.json to
+    // decide whether a fazlapp.com link may open the app instead of the
+    // browser. Without this it fell into the missing-locale branch above and
+    // answered 307 to /en/.well-known/..., so verification could never pass
+    // and every shared link opened on the web.
+    "/((?!api|_next/static|_next/image|\\.well-known|favicon.ico|favicon.png|icon.svg|icon.png|firebase-messaging-sw.js|notifications/).*)",
   ],
 };
