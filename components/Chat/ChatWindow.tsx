@@ -967,9 +967,15 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
               const previousDateLabel = getDateLabel(sortedFilteredMessages[index - 1]?.createdAt);
               const showDateSeparator = currentDateLabel && currentDateLabel !== previousDateLabel;
               const MAX_CHAT_IMAGES = 5;
+              // senderText only exists on system messages (offer
+              // accept/decline), where the two sides need different wording —
+              // "Your offer was accepted" is only true for the offerer, not
+              // for whoever accepted it. Applies to broadcast threads too.
               const textContent =
                 threadType === "broadcast_messages"
-                  ? message?.message
+                  ? mine && message?.senderText
+                    ? message.senderText
+                    : message?.message
                   : mine && message?.senderText
                     ? message.senderText
                     : message?.text;
