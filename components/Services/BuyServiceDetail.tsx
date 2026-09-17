@@ -426,10 +426,10 @@ function BuyServiceDetail({
                     type="button"
                     disabled={isLoading}
                     onClick={handleMessageProvider}
-                    className="flex h-[46px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-green-1 text-[16px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-70"
+                    className="flex h-[46px] flex-1 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-green-1 px-3 text-[16px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {isLoading ? (
-                      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                      <span className="inline-block h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white/40 border-t-white" />
                     ) : (
                       <ChatProviderIcon className="h-5 w-5 shrink-0" />
                     )}

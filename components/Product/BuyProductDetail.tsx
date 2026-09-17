@@ -723,10 +723,10 @@ function BuyProductDetail({
                         type="button"
                         disabled={isLoading}
                         onClick={handleChatStore}
-                        className="flex h-[46px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-green-1 text-[16px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-70"
+                        className="flex h-[46px] flex-1 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-green-1 px-3 text-[16px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-70"
                       >
                         {isLoading ? (
-                          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                          <span className="inline-block h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white/40 border-t-white" />
                         ) : (
                           <ChatStoreIcon className="h-5 w-5 shrink-0" />
                         )}
@@ -735,7 +735,7 @@ function BuyProductDetail({
                       <button
                         type="button"
                         onClick={handleWhatsAppContact}
-                        className="flex h-[46px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-green-1 bg-white text-[16px] font-medium text-green-1"
+                        className="flex h-[46px] flex-1 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-green-1 bg-white px-3 text-[16px] font-medium text-green-1"
                       >
                         <WhatsAppIcon className="h-5 w-5 shrink-0 text-[#25D366]" />
                         {placeholders.whatsapp}
