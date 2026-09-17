@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { useDispatch } from 'react-redux';
 import { useDictionary } from '@/dictionaries/DictionaryProvider';
 import { useGetAllThreadsForBroadcastQuery } from '@/store/services/chatService';
@@ -13,6 +13,7 @@ import moment from 'moment';
 import noMessagesIcon from "@/assets/icons/no-message.svg";
 import noImageAvtar from "@/assets/images/default-profile-avatar.svg";
 import AvatarUi from '../Ui/AvatarUi';
+import { usePresence, type PresenceMap } from '@/custom-hooks/usePresence';
 import { MicrophoneIcon } from '@heroicons/react/24/solid';
 
 function BroadCastThreadList({
@@ -42,6 +43,27 @@ function BroadCastThreadList({
         // limit: PAGE_LIMIT,
     },
     );
+    // Live online state for the other party in each thread, seeded with
+    // whatever the list API already returned so the dots are right on first
+    // paint, then kept live by the socket. Same shape as DirectMessages.
+    const { presenceIds, presenceSeed } = useMemo(() => {
+        const ids: string[] = [];
+        const seed: PresenceMap = {};
+        for (const thread of (conversations?.data ?? []) as any[]) {
+            const buyerId = thread?.buyer?.id ?? thread?.buyer?._id;
+            const other = String(buyerId ?? "") !== userId ? thread?.buyer : thread?.seller;
+            const otherId = String(other?.id ?? other?._id ?? "");
+            if (!otherId) continue;
+            ids.push(otherId);
+            seed[otherId] = {
+                isOnline: Boolean(other?.isOnline),
+                lastSeenAt: other?.lastSeenAt ?? null,
+            };
+        }
+        return { presenceIds: ids, presenceSeed: seed };
+    }, [conversations?.data, userId]);
+    const presence = usePresence(presenceIds, presenceSeed);
+
     // const totalPages = parsePositiveInt(conversations?.data?.totalPages);
     // const lastBatch =
     //     (conversations?.data?.conversations as ChatThread[] | undefined) ?? [];
@@ -132,6 +154,9 @@ function BroadCastThreadList({
                     // Same parsing fix as DirectMessages — see the comment there.
         const buyerId = thread?.buyer?.id ?? thread?.buyer?._id;
         const thread_user = String(buyerId ?? "") !== userId ? thread?.buyer : thread?.seller;
+                    const isOnline = Boolean(
+                        presence[String(thread_user?.id ?? thread_user?._id ?? "")]?.isOnline,
+                    );
                     const unreadCount =
                         typeof thread.unreadCount === "number"
                             ? thread.unreadCount
@@ -147,13 +172,19 @@ function BroadCastThreadList({
                                 }}
                                 className={`flex w-full cursor-pointer items-start gap-3 px-4 py-4 text-left ${isActive ? "bg-[#E7F4F5]" : "hover:bg-gray-50"}`}
                             >
-                                <AvatarUi
-                                    image={thread_user?.image ?? noImageAvtar.src}
-                                    name={thread_user?.name ?? ""}
-
-                                    className="h-11 w-11 rounded-full object-cover bg-[#e7f4f5] !text-green-1"
-
-                                />
+                                <span className="relative shrink-0">
+                                    <AvatarUi
+                                        image={thread_user?.image ?? noImageAvtar.src}
+                                        name={thread_user?.name ?? ""}
+                                        className="h-11 w-11 rounded-full object-cover bg-[#e7f4f5] !text-green-1"
+                                    />
+                                    {isOnline ? (
+                                        <span
+                                            aria-label={ph("online")}
+                                            className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-[#22C55E]"
+                                        />
+                                    ) : null}
+                                </span>
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-center justify-between gap-2">
                                         <p className="truncate text-[15px] font-medium text-[#030303] first-letter:capitalize">{thread_user?.name ?? ""}</p>

@@ -436,25 +436,39 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
 
   // Emits this browser's own typing state, debounced so a burst of keystrokes
   // doesn't spam the socket — 'typing' fires once per burst, 'stopTyping'
-  // fires 2s after the user stops. Direct messages only, same scope as the
-  // typing indicator itself.
+  // fires 2s after the user stops.
+  //
+  // The two thread kinds are different namespaces with different room keys: a
+  // direct message is scoped by conversationId on /chat, a broadcast thread by
+  // threadId on /broadcast. Same event names on both.
   const isTypingRef = useRef(false);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const canEmitTyping =
+    Boolean(userId) &&
+    (threadType === "direct_messages"
+      ? Boolean(conversationId)
+      : Boolean(broadcastThreadId));
   const emitTyping = useCallback(
     (isTyping: boolean) => {
-      if (threadType !== "direct_messages" || !conversationId || !userId) return;
-      const socket = initializeSocket("chat");
-      socket?.emit(isTyping ? "typing" : "stopTyping", {
-        conversationId,
+      if (!userId) return;
+      const event = isTyping ? "typing" : "stopTyping";
+      if (threadType === "direct_messages") {
+        if (!conversationId) return;
+        initializeSocket("chat")?.emit(event, { conversationId, userId });
+        return;
+      }
+      if (!broadcastThreadId) return;
+      initializeSocket("broadcast")?.emit(event, {
+        threadId: broadcastThreadId,
         userId,
       });
     },
-    [threadType, conversationId, userId],
+    [threadType, conversationId, broadcastThreadId, userId],
   );
   const handleMessageTextChange = useCallback(
     (value: string) => {
       setMessageText(value);
-      if (threadType !== "direct_messages" || !conversationId || !userId) return;
+      if (!canEmitTyping) return;
 
       if (value.trim()) {
         if (!isTypingRef.current) {
@@ -472,10 +486,12 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
         emitTyping(false);
       }
     },
-    [threadType, conversationId, userId, emitTyping],
+    [canEmitTyping, emitTyping],
   );
-  // Stop announcing typing when the conversation changes or this window
-  // unmounts, so the other side's indicator doesn't stick on mid-debounce.
+  // Stop announcing typing when the thread changes or this window unmounts, so
+  // the other side's indicator doesn't stick on mid-debounce. Keyed on the
+  // broadcast thread too, since switching between two broadcast threads leaves
+  // conversationId unchanged for a received one.
   useEffect(() => {
     return () => {
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
@@ -485,7 +501,7 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationId]);
+  }, [conversationId, broadcastThreadId]);
 
   const handleSendMessage = useCallback(async () => {
     if (messageText.trim() === "" && !selectedFile && !recordedBlob) {
@@ -850,9 +866,19 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
         markMessagesAsRead({ conversationId, userId }).unwrap().catch(() => {});
       }
     };
-    const onUserTyping = (payload: { conversationId?: string; userId?: string; isTyping?: boolean }) => {
+    // One handler for both namespaces: /chat scopes by conversationId, and
+    // /broadcast by threadId, so whichever key the payload carries is matched
+    // against this window's own id for that kind.
+    const onUserTyping = (payload: {
+      conversationId?: string;
+      threadId?: string;
+      userId?: string;
+      isTyping?: boolean;
+    }) => {
       if (!payload) return;
-      if (String(payload.conversationId ?? "") !== String(conversationId ?? "")) return;
+      const room = payload.threadId ?? payload.conversationId ?? "";
+      const mineRoom = payload.threadId ? broadcastThreadId : conversationId;
+      if (String(room) !== String(mineRoom ?? "")) return;
       if (String(payload.userId ?? "") !== String(headerUserId ?? "")) return;
       setOtherTyping(Boolean(payload.isTyping));
     };
@@ -878,14 +904,30 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
     chatSocket?.on("messagesRead", onMessagesRead);
     chatSocket?.on("userTyping", onUserTyping);
     broadcastSocket?.on("receiveBroadcastMessage", onReceiveBroadcastMessage);
+    // Broadcast receipts are their own events on their own namespace, but they
+    // carry the same {messageIds} shape, so applyStatus handles them unchanged.
+    broadcastSocket?.on("broadcastMessagesDelivered", onMessagesDelivered);
+    broadcastSocket?.on("broadcastMessagesRead", onMessagesRead);
+    broadcastSocket?.on("userTyping", onUserTyping);
     return () => {
       chatSocket?.off("receiveMessage", onReceiveMessage);
       chatSocket?.off("messagesDelivered", onMessagesDelivered);
       chatSocket?.off("messagesRead", onMessagesRead);
       chatSocket?.off("userTyping", onUserTyping);
       broadcastSocket?.off("receiveBroadcastMessage", onReceiveBroadcastMessage);
+      broadcastSocket?.off("broadcastMessagesDelivered", onMessagesDelivered);
+      broadcastSocket?.off("broadcastMessagesRead", onMessagesRead);
+      broadcastSocket?.off("userTyping", onUserTyping);
     };
-  }, [dispatch, conversationId, userId, threadType, headerUserId, markMessagesAsRead]);
+  }, [
+    dispatch,
+    conversationId,
+    broadcastThreadId,
+    userId,
+    threadType,
+    headerUserId,
+    markMessagesAsRead,
+  ]);
   return (
     <section
       className="flex h-full min-h-0 flex-1 flex-col bg-repeat bg-center"
@@ -988,7 +1030,9 @@ export default function ChatWindow({ thread, onBack, threadType, draftMessage = 
               const audioUrl: string | undefined = message?.audioUrl;
               const hasAudio = Boolean(audioUrl);
               const messageTime = getMessageTime(message.createdAt);
-              const showTicks = mine && threadType === "direct_messages";
+              // Broadcast messages now carry the same status, so the receipt
+              // is drawn on both kinds rather than direct messages alone.
+              const showTicks = mine;
               const isReadTick = message?.status === "read";
               const tickMark = message?.status === "delivered" || message?.status === "read" ? "✓✓" : "✓";
               return (
