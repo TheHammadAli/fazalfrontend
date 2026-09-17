@@ -33,6 +33,7 @@ function PostServiceVideoModal({ open, setOpen, onCreated }: Props) {
   const [video, setVideo] = useState<File | null | string>(null);
   const [caption, setCaption] = useState("");
   const [captionError, setCaptionError] = useState("");
+  const [videoBusy, setVideoBusy] = useState(false);
   const [taggedProductId, setTaggedProductId] = useState("");
   const [postServiceVideo, { isLoading, isSuccess, isError, data, error }] =
     usePostServiceVideoMutation();
@@ -57,6 +58,7 @@ function PostServiceVideoModal({ open, setOpen, onCreated }: Props) {
       onCreated?.();
     }
     if (isError) {
+      console.error("Video post failed:", error);
       toast.error(
         (error as { data?: { message?: string } })?.data?.message ||
           error_messages.something_went_wrong,
@@ -69,6 +71,7 @@ function PostServiceVideoModal({ open, setOpen, onCreated }: Props) {
     e.preventDefault();
     setCaptionError("");
 
+    if (videoBusy) return;
     if (!video) {
       toast.error(error_messages.video_required);
       return;
@@ -96,7 +99,11 @@ function PostServiceVideoModal({ open, setOpen, onCreated }: Props) {
         </h2>
         <form onSubmit={handleSubmit} className={isLoading ? "pointer-events-none" : ""}>
           <div className="mt-4">
-            <ChooseVideoTab video={video} setVideo={setVideo} />
+            <ChooseVideoTab
+              video={video}
+              setVideo={setVideo}
+              onBusyChange={setVideoBusy}
+            />
           </div>
           <div className="mt-4 space-y-1">
             <p className="text-[14px] font-normal text-gray-8">
@@ -156,10 +163,17 @@ function PostServiceVideoModal({ open, setOpen, onCreated }: Props) {
           )}
           <DoodleButton
             type="submit"
-            disabled={isLoading}
-            className="mt-5 h-[46px] w-full rounded-[12px] text-white font-medium text-[16px] bg-green-1 cursor-pointer"
+            disabled={isLoading || videoBusy}
+            className="mt-5 h-[46px] w-full rounded-[12px] text-white font-medium text-[16px] bg-green-1 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isLoading ? <BeatLoader color="white" size={8} /> : placeholders.post_video}
+            {isLoading ? (
+              <span className="flex items-center justify-center gap-2">
+                <BeatLoader color="white" size={8} />
+                {placeholders.uploading_video}
+              </span>
+            ) : (
+              placeholders.post_video
+            )}
           </DoodleButton>
         </form>
       </div>

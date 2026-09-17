@@ -3,24 +3,55 @@
 import { useDictionary } from "@/dictionaries/DictionaryProvider";
 import React, { useState } from "react";
 import Image from "next/image";
+import toast from "react-hot-toast";
 import crossImage from "@/assets/icons/cross-icon.svg";
+import {
+  prepareVideoForUpload,
+  VideoTooLongError,
+} from "@/utils/videoCompression";
+
 interface Props {
   video: File | null | string;
   setVideo: React.Dispatch<React.SetStateAction<File | null | string>>;
+  /** Lets the parent form disable its submit while a video is being processed. */
+  onBusyChange?: (busy: boolean) => void;
 }
-function ChooseVideoTab({ video, setVideo }: Props) {
-  const { placeholders } = useDictionary();
+function ChooseVideoTab({ video, setVideo, onBusyChange }: Props) {
+  const { placeholders, error_messages } = useDictionary();
   const [isDragging, setIsDragging] = useState(false);
+  const [compressing, setCompressing] = useState(false);
+  const [progress, setProgress] = useState(0);
 
-  const addVideoFile = (fileList: FileList | null) => {
+  // Every web video upload — both post-video modals and all four listing forms
+  // — funnels through this picker, so validating and shrinking here covers the
+  // lot. Downstream code only ever sees the small 480p MP4.
+  const addVideoFile = async (fileList: FileList | null) => {
+    if (compressing) return;
     if (!fileList?.length) return;
     const file = Array.from(fileList).find((f) => f.type.startsWith("video/"));
     if (!file) return;
-    setVideo(file);
+
+    setCompressing(true);
+    onBusyChange?.(true);
+    setProgress(0);
+    try {
+      const prepared = await prepareVideoForUpload(file, setProgress);
+      setVideo(prepared.file);
+    } catch (err) {
+      if (err instanceof VideoTooLongError) {
+        toast.error(error_messages.video_too_long);
+      } else {
+        console.error("Video processing failed:", err);
+        toast.error(error_messages.video_processing_failed);
+      }
+    } finally {
+      setCompressing(false);
+      onBusyChange?.(false);
+    }
   };
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    addVideoFile(e.target.files);
+    void addVideoFile(e.target.files);
     e.target.value = "";
   };
 
@@ -31,7 +62,7 @@ function ChooseVideoTab({ video, setVideo }: Props) {
     <div>
       <div className="mt-5 flex gap-2 flex-wrap">
         {/* Video Preview */}
-        {video && (
+        {video && !compressing && (
           <div className="relative h-[126px] w-[126px] rounded-[12px] overflow-hidden">
             <video
               src={
@@ -61,8 +92,22 @@ function ChooseVideoTab({ video, setVideo }: Props) {
           </div>
         )}
 
+        {/* Compressing state — replaces the picker while work is in flight, so
+            a second file can't be started on top of the first. */}
+        {compressing && (
+          <div className="flex h-[126px] w-full flex-col items-center justify-center gap-2 rounded-[12px] border-2 border-dashed border-green-1 bg-green-3/20">
+            <span className="h-6 w-6 animate-spin rounded-full border-2 border-green-1/30 border-t-green-1" />
+            <p className="text-[14px] font-medium text-green-1">
+              {placeholders.compressing_video}
+            </p>
+            <p className="text-[12px] text-gray-8">
+              {Math.round((progress || 0) * 100)}%
+            </p>
+          </div>
+        )}
+
         {/* Upload Button */}
-        {!video && (
+        {!video && !compressing && (
           <div
             className={`h-[126px] min-w-[126px] ${!video ? "w-full border-green-1 " : "w-auto"} flex items-center justify-center rounded-[12px] border-2 border-dashed transition-colors ${isDragging
               && "border-green-1 bg-green-3/40"
@@ -87,7 +132,7 @@ function ChooseVideoTab({ video, setVideo }: Props) {
               e.preventDefault();
               e.stopPropagation();
               setIsDragging(false);
-              addVideoFile(e.dataTransfer.files);
+              void addVideoFile(e.dataTransfer.files);
             }}
           >
             <label
@@ -117,6 +162,7 @@ function ChooseVideoTab({ video, setVideo }: Props) {
                 type="file"
                 accept="video/*"
                 onChange={handleUpload}
+                disabled={compressing}
                 className="hidden"
               />
             </label>

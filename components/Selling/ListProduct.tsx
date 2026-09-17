@@ -79,10 +79,17 @@ function ListProduct() {
   const [activeTab, setActiveTab] = useState<string>(tabs[0]);
   const [images, setImages] = useState<(File | string)[]>([]);
   const [video, setVideo] = useState<File | null | string>(null);
+  const [videoBusy, setVideoBusy] = useState(false);
 
   const tabsComponents: { [key: string]: React.ReactNode } = {
     photos_tab: <ChooseImagesTab images={images} setImages={setImages} />,
-    video_tab: <ChooseVideoTab video={video} setVideo={setVideo} />,
+    video_tab: (
+      <ChooseVideoTab
+        video={video}
+        setVideo={setVideo}
+        onBusyChange={setVideoBusy}
+      />
+    ),
   };
   const [title, setTitle] = useState("");
   const [titleError, setTitleError] = useState("");
@@ -780,7 +787,7 @@ function ListProduct() {
 
                 <DoodleButton
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || videoBusy}
                   className="mt-3   h-[46px] w-full rounded-[12px] text-white font-medium text-[16px]  bg-green-1 cursor-pointer"
                 >
                   {isLoading ? (
